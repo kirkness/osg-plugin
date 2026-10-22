@@ -1,0 +1,6 @@
+{
+  "extraKnownMarketplaces": {
+    "osg": { "source": { "source": "github", "repo": "kirkness/osg-plugin" } }
+  },
+  "enabledPlugins": { "osg@osg": true }
+}

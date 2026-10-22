@@ -1,0 +1,13 @@
+{
+  "name": "osg-plugin-dev",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Development scripts and tests for the Our Silly Games Claude Code plugin. Not a workspace package.",
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "gen:limits": "bun scripts/gen-limits.ts",
+    "sync:cli": "bun scripts/sync-cli.ts"
+  }
+}

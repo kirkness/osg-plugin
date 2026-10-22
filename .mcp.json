@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "osg": { "type": "http", "url": "https://mcp.oursilly.games/mcp" },
+    "osg-docs": { "type": "http", "url": "https://mcp.oursilly.games/docs" }
+  }
+}

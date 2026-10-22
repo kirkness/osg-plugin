@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Seed Dash</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <main id="app">
+      <header id="hud">
+        <span id="score">0</span>
+        <span id="time">30</span>
+        <span id="best">Best 0</span>
+      </header>
+      <canvas id="stage" width="800" height="500" aria-label="Seed Dash arena"></canvas>
+      <section id="panel">
+        <h1>Seed Dash</h1>
+        <p id="blurb">Eat more seeds than the rival. Arrows, WASD or drag.</p>
+        <p id="result" role="status"></p>
+        <div class="row">
+          <button id="go" type="button">Play</button>
+          <button id="board" type="button" hidden>Leaderboard</button>
+          <button id="friends" type="button" hidden>Play with friends</button>
+        </div>
+        <p id="room" role="status"></p>
+      </section>
+    </main>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

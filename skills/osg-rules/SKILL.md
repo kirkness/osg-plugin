@@ -1,0 +1,40 @@
+---
+name: osg-rules
+description: Use before submitting, when something looks risky, or when a game is rejected: the approval rules in plain language (no external calls or CDN, no copied IP, no rude words or imagery), what the cloud review does, rejection and resubmit, topic drift, rollback, plus a local pre-flight checklist.
+allowed-tools: mcp__plugin_osg_osg-docs__read_doc mcp__plugin_osg_osg-docs__get_playbook mcp__plugin_osg_osg-docs__search_docs
+---
+
+# Approval rules
+
+Read the `rules` doc (`read_doc`, slug `rules`) for the full text and the `troubleshooting` doc for each finding code. After a rejection follow the `fix-rejection` playbook (`get_playbook`, name `fix-rejection`).
+
+## The three rules
+
+1. **No external network calls.** The game's sandbox allows only its own files. No CDN or hosted fonts (Google Fonts, jsDelivr, unpkg, cdnjs), no `fetch`/`XMLHttpRequest`/`WebSocket`/`sendBeacon`/`RTCPeerConnection` with a URL, no analytics, ads or error reporters, no service workers, no visible links to websites. Vendor everything. This is the commonest failure of AI-made games (`EXT_CDN_ASSET`).
+2. **No copied IP.** No franchise or brand names, characters, art, sounds or music from commercial works; no non-commercial or unknown-licence assets; no near-copies of a famous title. "Fan game" and "parody" do not help. Mechanics and genres are free to copy. CC-BY assets need `CREDITS.md` and a credits screen.
+3. **No rude words or imagery.** No strong profanity or slurs (including disguised spellings and generated text), sexual content, gore, hate symbols, harassment, drug promotion. Cartoon violence and gore-free horror are allowed and tagged. The audience includes children.
+
+## What the review does
+
+Builds the source with no network, checks structure, scans for the codes above, plays the game in a real browser three ways (and once with every NPC model off), reviews copyright, rude content and external calls independently, then publishes immediately if it passes, rejects with reasons if not, or holds if the review could not run. It is a filter, not legal clearance. Do not write comments or strings addressed to a reviewer or an AI; they are flagged and hold the game.
+
+## After a verdict
+
+A rejection email lists the checks, finding codes, short evidence and the fix; the live version (if any) stays live; resubmit after fixing. An update that looks like a different game is rejected as topic drift ("create a new game"). Authors can roll back or unpublish at any time (`publish` doc).
+
+## Pre-flight checklist (run it, report each line pass or fail)
+
+1. `bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" check` is clean (add `--players 2` for rooms).
+2. Search the project (code, CSS, HTML, JSON, but not `node_modules`) for `http://`, `https://`, `//cdn`, `@import url(`, `fonts.googleapis`, `unpkg`, `jsdelivr`, `cdnjs`. Allowed: XML namespaces, prose in `CREDITS.md`.
+3. Search for `fetch(`, `XMLHttpRequest`, `WebSocket`, `sendBeacon`, `serviceWorker`, `window.open`, `RTCPeerConnection`: none.
+4. Every font, image, sound, library is in the project and in the lockfile.
+5. Title, characters and every asset are original or licensed; `CREDITS.md` complete.
+6. No profanity, slurs, sexual or gory content in text, images, audio or generated strings.
+7. No text addressed to a reviewer or AI.
+8. NPC fallbacks work with the model off.
+9. Boards are bounded; the bounds match the rules.
+10. `osg.json` validates; `slug` matches the created game.
+11. No secrets or `.env` in the project.
+12. `bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" shot` frames look like something worth a game card.
+
+Do not tell the author the game "will pass". Say what you checked and what the review may still catch.

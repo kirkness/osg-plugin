@@ -1,0 +1,34 @@
+{
+  "manifestVersion": 1,
+  "slug": "seed-dash",
+  "name": "Seed Dash",
+  "tagline": "Thirty seconds. One hungry blob. One greedy rival.",
+  "build": { "template": "vite" },
+  "input": { "modes": ["keyboard", "mouse", "touch"], "primary": "keyboard", "controls": "Arrows, WASD or drag" },
+  "players": { "min": 1, "max": 4 },
+  "features": {
+    "save": { "enabled": true },
+    "leaderboards": [
+      { "id": "main", "title": "Best round", "sort": "desc", "kind": "bounded", "min": 0, "max": 1500, "maxPerSecond": 100, "minDurationMs": 10000, "periods": ["all", "day", "week"], "show": { "top": 10, "around": 2 } }
+    ],
+    "achievements": [
+      { "id": "seed-hoarder", "name": "Seed hoarder", "description": "Eat 100 seeds.", "stat": "seeds", "target": 100, "points": 20 }
+    ],
+    "stats": [{ "id": "seeds", "kind": "sum" }],
+    "rooms": { "minSeats": 2, "maxSeats": 4, "topology": "host-authoritative", "sendHz": 20, "snapshots": true },
+    "npcs": {
+      "brains": [
+        {
+          "id": "rival",
+          "question": "What should the rival blob do next?",
+          "persona": "A greedy, slightly nervous collector.",
+          "options": {
+            "seek": "Go to the nearest seed",
+            "shadow": "Stay close to the player blob",
+            "wander": "Drift around slowly"
+          }
+        }
+      ]
+    }
+  }
+}

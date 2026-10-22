@@ -1,0 +1,14 @@
+{
+  "name": "osg",
+  "description": "Claude Code plugin for making browser games and publishing them on Our Silly Games.",
+  "owner": {
+    "name": "Our Silly Games"
+  },
+  "plugins": [
+    {
+      "name": "osg",
+      "source": "./",
+      "description": "Make a browser game with Claude Code and publish it on Our Silly Games."
+    }
+  ]
+}
