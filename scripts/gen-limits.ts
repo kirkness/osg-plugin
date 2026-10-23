@@ -41,6 +41,7 @@ export function formatValue(key: string, v: unknown): string {
 /** Platform-internal tuning (abuse controls, spend caps, review internals) that authors cannot act on and attackers could use: never published. */
 export const INTERNAL_ONLY: readonly (string | RegExp)[] = [
   "room.ticketTtlSec", "room.ticketSkewSec", "room.evidenceRows", "room.evidenceRetentionMs",
+  "pads.ticketTtlSec", "pads.ticketSkewSec", "pads.signalMaxBytes", "pads.signalsPerMinPerPad",
   /^npc\.(perGameDailyUsd|globalDailyUsd|globalCallsPer60s|usdPerMInputTokens|circuitBreakerMs)$/,
   /^verify\.(maxTokens|browserConcurrency|blockConfidence|topicDrift|canary)/,
   /^auth\./,
@@ -62,6 +63,7 @@ const SECTIONS: { key: keyof typeof LIMITS; title: string; blurb: string }[] = [
   { key: "board", title: "Leaderboards", blurb: "Per board and per player." },
   { key: "achievement", title: "Achievements and stats", blurb: "Per game." },
   { key: "npc", title: "NPC decisions", blurb: "The platform budgets decisions. Every limit hit answers with your scripted fallback, never an error." },
+  { key: "pads", title: "Phones as controllers (pads)", blurb: "Per play session and per phone. A custom controller page is counted with everything it references. See `pads`." },
   { key: "source", title: "Source archive and build", blurb: "What `osg pack` may produce and what the server build may output." },
   { key: "verify", title: "Verification and submissions", blurb: "How many submissions you may have, and how the review run is bounded." },
   { key: "rank", title: "Global ranking", blurb: "Eligibility and scoring constants of the cross-game ranking." },
@@ -74,8 +76,8 @@ export function renderLimits(l: typeof LIMITS = LIMITS): string {
   const out: string[] = [];
   out.push("---");
   out.push("title: Limits and quotas");
-  out.push("summary: Every number the platform enforces: seats, message rates, save sizes, board bounds, NPC budgets, source and build caps, submission quotas.");
-  out.push("tags: [limits, quotas, rooms, saves, boards, npcs, build]");
+  out.push("summary: Every number the platform enforces: seats, message rates, save sizes, board bounds, NPC budgets, phone controllers, source and build caps, submission quotas.");
+  out.push("tags: [limits, quotas, rooms, saves, boards, npcs, pads, build]");
   out.push("---");
   out.push("");
   out.push("# Limits and quotas");
@@ -93,6 +95,7 @@ export function renderLimits(l: typeof LIMITS = LIMITS): string {
   out.push(`- A save value is at most **${bytes(L.save.maxValueBytes)}**, a player's saves for one game at most ${bytes(L.save.maxBytesPerPlayerGame)} across ${L.save.maxKeys} keys. The server writes at most once per key per ${duration(L.save.writeCoalesceMs)}.`);
   out.push(`- At most **${L.board.maxBoardsPerGame} boards** per game; a board shows the top ${L.board.showTopMax} at most, plus ${L.board.showAroundMax} rows around the player at most.`);
   out.push(`- A world sent to an NPC brain is at most **${bytes(L.npc.worldMaxBytes)}**, with at most ${L.npc.maxNpcsPerCall} NPCs per call, ${L.npc.maxBrainsPerGame} brains per game and ${L.npc.maxOptions} options per brain. One room gets ${L.npc.perRoom.perSec} decision per second (burst ${L.npc.perRoom.burst}); one player ${L.npc.perUserPerMin} per minute.`);
+  out.push(`- Up to **${L.pads.maxPads} phones** pair with one play session; pairing stays open ${duration(L.pads.pairOpenMs)} after it was last opened. A phone sends at most ${L.pads.stateHzMax} state updates per second; a custom payload is at most ${bytes(L.pads.customMaxBytes)}. A custom controller page is at most ${bytes(L.pads.controllerMaxBytes)} and ${L.pads.controllerMaxFiles} files.`);
   out.push(`- Your source zip is at most **${bytes(L.source.zipBytes)}** (${bytes(L.source.unpackedBytes)} unpacked, ${L.source.files} files). The built game is at most ${bytes(L.source.outputBytes)} and ${L.source.outputFiles} files; one file at most ${bytes(L.source.outputSingleFileBytes)}.`);
   out.push(`- You may submit **${L.verify.perAuthorSubmissionsPerDay} times per day** with at most **${L.verify.perAuthorOpenSubmissions} open** at once. Verification gives up after ${duration(L.verify.deadlineMs)}.`);
   out.push(`- Rejected source is deleted ${L.verify.rejectedRetentionDays} days after the verdict.`);

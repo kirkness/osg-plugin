@@ -16,7 +16,7 @@ Read the `rules` doc (`read_doc`, slug `rules`) for the full text and the `troub
 
 ## What the review does
 
-Builds the source with no network, checks structure, scans for the codes above, plays the game in a real browser three ways (and once with every NPC model off), reviews copyright, rude content and external calls independently, then publishes immediately if it passes, rejects with reasons if not, or holds if the review could not run. It is a filter, not legal clearance. Do not write comments or strings addressed to a reviewer or an AI; they are flagged and hold the game.
+Builds the source with no network, checks structure, scans for the codes above, plays the game in a real browser three ways (and once with every NPC model off), reviews copyright, rude content and external calls independently, then publishes immediately if it passes, rejects with reasons if not, or holds if the review could not run. A custom phone controller page (`features.pads.controller`) is never reviewed by the AI or opened in the passes: it gets a strict code check instead (no network, no `eval`, no escaping its frame, no remote files; see the `osg-pads` skill). It is a filter, not legal clearance. Do not write comments or strings addressed to a reviewer or an AI; they are flagged and hold the game.
 
 ## After a verdict
 
@@ -36,5 +36,6 @@ A rejection email lists the checks, finding codes, short evidence and the fix; t
 10. `osg.json` validates; `slug` matches the created game.
 11. No secrets or `.env` in the project.
 12. `bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" shot` frames look like something worth a game card.
+13. With phone controls: the game plays fully without a phone, and the custom controller (if any) passes its code check in `check`.
 
 Do not tell the author the game "will pass". Say what you checked and what the review may still catch.

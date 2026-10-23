@@ -19,6 +19,7 @@ For the full guide, read the `design` doc (`read_doc`, slug `design`). The polis
 5. **Failure state.** What happens on loss; why it is funny or fair; restart in under two seconds.
 6. **One more go.** What pulls the next attempt.
 7. **Screenshot moment.** The single frame that makes someone tap the card. Design it.
+8. **Hands.** What does the player physically do? If the fun is a motion (reel in a fish, steer a wheel, swing a racket, tilt a marble tray) or a secret (a hand of cards on each phone at a party), offer phones as controllers next to the keyboard controls (the `osg-pads` skill has idea starters).
 
 ## Visual direction, chosen on purpose
 

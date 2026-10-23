@@ -1,6 +1,6 @@
 # Our Silly Games plugin for Claude Code
 
-Make a browser game with Claude Code and publish it on [Our Silly Games](https://oursilly.games). The plugin gives Claude ten skills (design, SDK, local dev, multiplayer, NPCs, scores, rules, publish, assets, start), a local `osg` command, and two MCP servers (docs, and your account).
+Make a browser game with Claude Code and publish it on [Our Silly Games](https://oursilly.games). The plugin gives Claude eleven skills (design, SDK, local dev, multiplayer, NPCs, scores, phones as controllers, rules, publish, assets, start), a local `osg` command, and two MCP servers (docs, and your account).
 
 Marketplace `osg`, plugin `osg`, repository `kirkness/osg-plugin`. Source of truth for this directory: the `plugin/` folder of the Our Silly Games monorepo, copied to the public repo at release.
 
@@ -32,7 +32,7 @@ Updates are not automatic for third-party marketplaces: `claude plugin update os
 .claude-plugin/plugin.json        name osg, version, homepage
 .claude-plugin/marketplace.json   one entry, source "./" (relative, so a project's settings can auto-register it)
 .mcp.json                         osg (OAuth) and osg-docs (anonymous): constant urls, no Authorization header
-skills/<name>/SKILL.md            osg-start osg-design osg-sdk osg-dev osg-multiplayer osg-npcs osg-scores osg-rules osg-publish osg-assets
+skills/<name>/SKILL.md            osg-start osg-design osg-sdk osg-dev osg-multiplayer osg-npcs osg-scores osg-pads osg-rules osg-publish osg-assets
 hooks/hooks.json                  one SessionStart hook
 scripts/session-start.sh          prints a FIXED line only when outdated; sends only the plugin version
 scripts/osg.mjs                   the bundled CLI (built from packages/cli; never in a top-level bin/)

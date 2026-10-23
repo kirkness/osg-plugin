@@ -1,6 +1,6 @@
 ---
 name: osg-sdk
-description: Use when writing or changing game code that touches the Our Silly Games SDK (@osg/sdk): ready, player, saves, leaderboards, achievements, stats, rooms, chat, NPC decisions, analytics, feature detection. Code touches only osg, never fetch or WebSocket.
+description: Use when writing or changing game code that touches the Our Silly Games SDK (@osg/sdk): ready, player, saves, leaderboards, achievements, stats, rooms, chat, NPC decisions, phones as controllers, analytics, feature detection. Code touches only osg, never fetch or WebSocket.
 allowed-tools: mcp__plugin_osg_osg-docs__read_doc mcp__plugin_osg_osg-docs__search_docs mcp__plugin_osg_osg-docs__validate_manifest
 ---
 
@@ -30,7 +30,7 @@ Which topology: `host-authoritative` (default), `peer-authoritative`, `lockstep`
 
 ## Pointers
 
-Boards and bounds: `osg-scores`. NPC decisions: `osg-npcs`. Running it: `osg-dev`. Use the `search_docs` tool for anything not covered.
+Boards and bounds: `osg-scores`. NPC decisions: `osg-npcs`. Phones as controllers (`osg.pads`, custom controller pages with `osg.controller`): the `osg-pads` skill. Running it: `osg-dev`. Use the `search_docs` tool for anything not covered.
 
 ## Testing
 

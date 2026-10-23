@@ -1,0 +1,58 @@
+---
+name: osg-pads
+description: Use when the author wants players to use their phones as controllers (pads), or when an idea would be better with one: QR pairing, built-in layouts (buttons, stick, wheel, reel, swing, tilt, touchpad), motion and gestures, couch and party games, honest latency, keyboard fallback, and custom controller pages with their code check.
+allowed-tools: mcp__plugin_osg_osg-docs__read_doc mcp__plugin_osg_osg-docs__get_playbook mcp__plugin_osg_osg-docs__validate_manifest
+---
+
+# Phones as controllers
+
+Read the `pads` doc (`read_doc`, slug `pads`) and follow the `add-phone-controls` playbook (`get_playbook`, name `add-phone-controls`).
+
+A player scans a QR code the game shows and their phone becomes a controller: no app, no account. Up to **4 phones** per play session. Pads never take room seats, so one screen with four phones is a couch game with no online multiplayer at all. The phone page is the platform's; the game only reads `osg.pads`, and still has no network.
+
+## When it is worth it
+
+Phones shine when the **motion is the fun** or when a player needs a **private screen**. Ideas to offer the author:
+
+- **Fishing:** `reel` layout. Circle the phone to wind against a fish that pulls back; `a` casts. Tension is a number the game shows.
+- **Steering:** `wheel` layout. Hold the phone sideways; tilt steers, thumbs are gas and brake. Karts, boats, a shopping trolley.
+- **Racket, bat, sword:** `swing` layout. Swing gestures with strength and direction; tennis, whack-a-mole, pancake flipping.
+- **Marble tray:** `tilt` layout. Roll a ball (or a hamster, or soup) through a maze by tilting the phone flat.
+- **Party games with secrets:** a custom controller. Each phone holds a hand of cards, a secret role, a drawing pad or a private vote; the big screen shows the table.
+- **Simple couch play:** `buttons` or `stick` so four friends play a local arena on one screen.
+
+Skip it when the game is twitchy (frame-perfect timing), solo and short, or when the phone adds nothing a keyboard does not.
+
+## Choosing a layout
+
+Ask what the player's hand does: steers (`wheel`), winds (`reel`), swings (`swing`), tilts a surface (`tilt`), points (`touchpad`), moves freely (`stick`), presses (`buttons`). Switch layouts per phase (`buttons` in menus, `wheel` in the race). Only declare `sensors: ["motion"]` when the game reads raw motion itself; the layouts already turn motion into `steer`, `tilt`, `reel` and gestures.
+
+## Design for latency
+
+- Same Wi-Fi: a direct link, typically a few tens of milliseconds. Otherwise everything goes through the relay, often 60-200 ms. Losing the direct link is not an error. **Design for the relay.**
+- Use `button` and `gesture` events for the moments that matter: they are reliable and carry the phone's timestamp. Read `pad.state` in the frame loop for analog values and smooth them.
+- Generous timing windows. Never promise "no lag". A small "direct / relay" indicator is honest.
+
+## Always keep a fallback
+
+- `osg.can("pads")` is false in standalone mode and when pads are not granted. The game must be fully playable with keyboard, mouse or touch. Show "Pair a phone" only when `can("pads")` is true.
+- Keep the existing input as `input.primary`; add `"phone"` to `input.modes` together with `features.pads`.
+- Draw the QR from `osg.pads.open()` in the game's style on a join screen, and always print the code under it. `osg.pads.showPairing()` is the shell's dialog for a menu button (it needs a click).
+
+## Custom controllers
+
+A custom controller is a small page in the build output (`features.pads.controller`, for example `pad/index.html`) that runs on the phone in a sandboxed frame with the game's CSP. It uses `osg.controller`: `input`, `press`, `send`, `onMessage`, `onHint`, `vibrate`. The game talks to it with `pad.send` and the pads `message` event; payloads are JSON up to 1 KiB.
+
+It is **not** reviewed by the AI or opened in the browser passes; it gets a strict code check instead (in `check` and on the server):
+
+1. The page is an `.html` file in the build output; everything it uses is at most 8 MiB and 300 files.
+2. No `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon`, `RTCPeerConnection`; `importScripts` only of its own relative files.
+3. No `eval`, `new Function`, or strings passed to `setTimeout` or `setInterval`.
+4. No `window.open`, `top`, `parent`, `opener`, page navigation, `document.domain`, or `postMessage` to other windows.
+5. No remote addresses in `src`, `href`, CSS or imports; no `<form>`, `<base>` or meta refresh.
+
+Write it by hand, small, with big touch targets; a framework that uses `eval` fails the check. Findings start with "custom controller:".
+
+## Test
+
+Start the game the way `osg-dev` says. The test page can add a simulated phone with a motion simulator. For a real phone, start it with `--lan`: the phone shows a certificate warning once, accept it, then scan the QR on the same Wi-Fi. Try mobile data too. Then run `bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" check`, which includes the controller code check.

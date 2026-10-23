@@ -29,7 +29,7 @@ You cannot switch it on yourself. Do not nag.
 
 ## 3. Creative brief first
 
-Follow the `osg-design` skill now, before any code: hook, friend test, 30-second loop, failure state, one more go, screenshot moment, visual direction. Save the result as `DESIGN.md` in the project. If the author already has a clear brief, confirm it against the rubric and move on.
+Follow the `osg-design` skill now, before any code: hook, friend test, 30-second loop, failure state, one more go, screenshot moment, visual direction. Save the result as `DESIGN.md` in the project. If the author already has a clear brief, confirm it against the rubric and move on. For couch, party or motion ideas (steering, fishing, swinging, a hand of cards per player), mention that phones can be controllers (the `osg-pads` skill).
 
 ## 4. Scaffold
 
@@ -47,6 +47,8 @@ Follow the `osg-design` skill now, before any code: hook, friend test, 30-second
 ## 6. Tell the author the timeline
 
 When they submit (`/osg:osg-publish`, which only they can start), we build the source, run the game in a cloud browser, check the rules, and **publish immediately if it passes**. They get an **email in about 10-20 minutes**, and can close the window. A rejection email says exactly what to fix.
+
+Submitting needs an Our Silly Games account; nothing before that does. Once, when the game first runs, offer to sign them in now so submitting is one step later: "Want to sign in to Our Silly Games now? I'll open your browser; it takes a minute." Only on a yes, run `bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" login` with a timeout of at least 6 minutes (it waits up to 5 for the browser) and give them the link it prints if no browser opens. On a no, carry on; `/osg:osg-publish` signs them in when they submit. Do not send them to `/mcp` for this.
 
 ## Never
 

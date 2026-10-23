@@ -1,7 +1,7 @@
 {
   "name": "osg",
   "displayName": "Our Silly Games",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Make a browser game with Claude Code and publish it on Our Silly Games: design, SDK, local multiplayer testing, approval rules and one-command submit.",
   "author": {
     "name": "Our Silly Games",

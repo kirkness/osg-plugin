@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { DOC_SLUGS, HOSTS, MCP_TOOLS, PLAYBOOKS, PLUGIN } from "@osg/protocol";
 import { PLUGIN_ROOT, frontmatter, read, readJson, walk } from "./helpers";
 
-const SKILL_NAMES = ["osg-start", "osg-design", "osg-sdk", "osg-dev", "osg-multiplayer", "osg-npcs", "osg-scores", "osg-rules", "osg-publish", "osg-assets"];
+const SKILL_NAMES = ["osg-start", "osg-design", "osg-sdk", "osg-dev", "osg-multiplayer", "osg-npcs", "osg-scores", "osg-pads", "osg-rules", "osg-publish", "osg-assets"];
 const CLI_COMMANDS = ["init", "dev", "check", "shot", "validate", "build", "pack", "login", "submit", "status", "stop", "upload", "update-sdk", "--help", "--version"];
 /** snake_case words skills may legitimately put in backticks that are not MCP tools: SDK error codes (sdk-types.ts OsgErrorCode) and a folder name. */
 const NON_TOOL_TOKENS = new Set(["not_ready", "unsupported", "not_declared", "sign_in_required", "permission_denied", "rate_limited", "quota_exceeded", "invalid_argument", "too_large", "conflict", "not_found", "timeout", "cancelled", "offline", "killed", "unavailable", "internal", "node_modules"]);
@@ -107,7 +107,7 @@ describe("layout", () => {
 
 describe("skills", () => {
   const dirs = readdirSync(join(PLUGIN_ROOT, "skills")).sort();
-  test("exactly the ten skills", () => expect(dirs).toEqual([...SKILL_NAMES].sort()));
+  test("exactly the eleven skills", () => expect(dirs).toEqual([...SKILL_NAMES].sort()));
 
   const toolNames = new Set(Object.keys(MCP_TOOLS));
   const slugs = new Set<string>(DOC_SLUGS);
@@ -179,8 +179,8 @@ describe("skills", () => {
 
   test("every doc slug and playbook is reachable from some skill or from the docs themselves", () => {
     const all = SKILL_NAMES.map((n) => read(join(PLUGIN_ROOT, "skills", n, "SKILL.md"))).join("\n");
-    for (const s of ["getting-started", "design", "sdk", "dev", "multiplayer", "npcs", "scores", "rules", "publish", "assets", "manifest", "troubleshooting"]) expect(all).toContain(`\`${s}\``);
-    for (const p of ["first-game", "add-multiplayer", "add-npcs", "add-leaderboard", "fix-rejection", "polish-pass", "update-game"]) {
+    for (const s of ["getting-started", "design", "sdk", "dev", "multiplayer", "npcs", "scores", "pads", "rules", "publish", "assets", "manifest", "troubleshooting"]) expect(all).toContain(`\`${s}\``);
+    for (const p of ["first-game", "add-multiplayer", "add-npcs", "add-leaderboard", "add-phone-controls", "fix-rejection", "polish-pass", "update-game"]) {
       const inSkills = all.includes(p);
       const inDocs = ["getting-started", "design", "publish"].some((d) => read(join(PLUGIN_ROOT, "../docs/author", `${d}.md`)).includes(p));
       expect(inSkills || inDocs, p).toBe(true);
