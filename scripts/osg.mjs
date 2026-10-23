@@ -22887,6 +22887,7 @@ function mulberry32(seed) {
   };
 }
 var KEYS = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Enter", "KeyW", "KeyA", "KeyS", "KeyD", "KeyZ", "KeyX"];
+var onGame = (page2, x2, y) => page2.evaluate(([px, py]) => document.elementFromPoint(px, py)?.tagName === "IFRAME", [x2, y]).catch(() => false);
 async function runMonkey(page2, box, ms, rng) {
   const end = Date.now() + ms;
   let actions = 0;
@@ -22900,7 +22901,9 @@ async function runMonkey(page2, box, ms, rng) {
         await page2.waitForTimeout(20 + Math.floor(rng() * 120));
         await page2.keyboard.up(k);
       } else if (r2 < 0.9) {
-        await page2.mouse.click(box.x + rng() * box.width, box.y + rng() * box.height, { delay: Math.floor(rng() * 60) });
+        const [x2, y, delay] = [box.x + rng() * box.width, box.y + rng() * box.height, Math.floor(rng() * 60)];
+        if (await onGame(page2, x2, y))
+          await page2.mouse.click(x2, y, { delay });
       } else {
         await page2.mouse.move(box.x + rng() * box.width, box.y + rng() * box.height, { steps: 3 });
       }
@@ -22913,6 +22916,12 @@ async function runMonkey(page2, box, ms, rng) {
 
 // src/headless.ts
 var getState = (p) => p.evaluate(() => window.__osgDev.state());
+function within(p, ms, fallback) {
+  let t2;
+  return Promise.race([p.catch(() => fallback), new Promise((r2) => {
+    t2 = setTimeout(() => r2(fallback), ms);
+  })]).finally(() => clearTimeout(t2));
+}
 async function waitFor(fn, ms, stepMs = 100) {
   const end = Date.now() + ms;
   while (Date.now() < end) {
@@ -23180,14 +23189,14 @@ async function runHeadless(o) {
       contexts.push(late.ctx);
       const f = await gameFrame(late);
       if (f && await hasOsg(f)) {
-        const ok = await f.evaluate(async (c) => {
+        const ok = await within(f.evaluate(async (c) => {
           try {
             await window.osg.rooms.join(c);
             return true;
           } catch {
             return false;
           }
-        }, code);
+        }, code), 20000, false);
         if (!ok)
           add("ROOM_JOIN", "warn", "a late joiner could not join the running room");
         else {
@@ -23208,7 +23217,7 @@ async function runHeadless(o) {
                 return false;
               }
             }).catch(() => false);
-            const ok2 = sent && await f.evaluate(async (c) => {
+            const ok2 = sent && await within(f.evaluate(async (c) => {
               const osg = window.osg;
               try {
                 await osg.rooms.current?.leave();
@@ -23217,13 +23226,15 @@ async function runHeadless(o) {
               } catch {
                 return false;
               }
-            }, code).catch(() => false);
+            }, code), 20000, false);
             const got = ok2 ? await waitFor(async () => {
               const s = await getState(late.page);
               const last = s.sockets[s.sockets.length - 1];
               return last?.snapshotReceived ? true : null;
             }, 8000) : null;
-            if (!got)
+            if (sent && !ok2)
+              add("ROOM_REJOIN", "error", "a player who left the room could not join it again within 20 s");
+            else if (!got)
               add("SNAPSHOT_NEVER_RECEIVED", "error", "a snapshot the host published through the SDK never reached a late joiner: snapshot delivery is broken");
           }
         }
