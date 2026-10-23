@@ -77,9 +77,10 @@ Needs a real Claude Code and a real Claude desktop app. Record each result (pass
 3. `/mcp` shows `plugin:osg:osg` (needs authentication) and `plugin:osg:osg-docs` (connected, no auth). Tool names look like `mcp__plugin_osg_osg-docs__read_doc`.
 4. Authenticate `osg` from `/mcp`. The consent page shows the client name from our allowlist and asks for a fresh email code for submit. Call `whoami`. (This is spike S1: the hard gate for sign-in.)
 5. In an empty folder: `/osg:osg-start`. Claude runs `bun --version`, does the design brief before code, scaffolds with `osg init`, and mentions ultracode once.
-6. Start a new session with an old plugin version simulated (`PLUGIN_MIN` above the installed version): the one fixed update line appears; with `OSG_NO_UPDATE_CHECK=1` it does not; offline, the session starts normally and quickly.
-7. `/osg:osg-publish` on a throwaway game: `create_game`, then `submit` each trigger a permission prompt. Claude cannot start `osg-publish` by itself ("publish my game" in chat must not run it unprompted).
-8. Negative: remove Bun from `PATH`; `/osg:osg-start` tells the author the install line instead of failing.
+6. Say "run my game". Claude starts `osg dev` in the background and replies with one sentence: the game is running and the link to open. No process ids, ports outside the link, `kill`/`pkill`/`Ctrl+C` or "Stop it any time" line. Say "run it" again: the same link, no second server. Say "stop the game": Claude runs `osg stop` and says it stopped; the link no longer loads. Say "restart it": stop, start, link again.
+7. Start a new session with an old plugin version simulated (`PLUGIN_MIN` above the installed version): the one fixed update line appears; with `OSG_NO_UPDATE_CHECK=1` it does not; offline, the session starts normally and quickly.
+8. `/osg:osg-publish` on a throwaway game: `create_game`, then `submit` each trigger a permission prompt. Claude cannot start `osg-publish` by itself ("publish my game" in chat must not run it unprompted).
+9. Negative: remove Bun from `PATH`; `/osg:osg-start` tells the author the install line instead of failing.
 
 ### B. Desktop trust-prompt test (decides `NEXT_PUBLIC_STARTER_DOWNLOAD`)
 

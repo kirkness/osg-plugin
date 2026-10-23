@@ -32,7 +32,7 @@ A rejection email lists the checks, finding codes, short evidence and the fix; t
 6. No profanity, slurs, sexual or gory content in text, images, audio or generated strings.
 7. No text addressed to a reviewer or AI.
 8. NPC fallbacks work with the model off.
-9. Boards are bounded; the bounds match the rules.
+9. Boards are bounded; the bounds match the rules. The board screen is drawn by the game from `top()`/`around()` (no `osg.leaderboards.show()`), with names as plain text.
 10. `osg.json` validates; `slug` matches the created game.
 11. No secrets or `.env` in the project.
 12. `bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" shot` frames look like something worth a game card.

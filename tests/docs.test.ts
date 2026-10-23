@@ -187,7 +187,7 @@ describe("content rules", () => {
   });
 
   test("docs only name CLI commands that exist", () => {
-    const known = new Set(["init", "dev", "check", "shot", "validate", "build", "pack", "login", "submit", "status", "upload", "update-sdk"]);
+    const known = new Set(["init", "dev", "check", "shot", "validate", "build", "pack", "login", "submit", "status", "stop", "upload", "update-sdk"]);
     for (const f of files.filter((x) => x.endsWith(".md"))) {
       for (const m of read(f).matchAll(/`osg ([a-z]+(?:-sdk)?)[^`]*`/g)) expect(known.has(m[1]!), `${f}: osg ${m[1]}`).toBe(true);
     }

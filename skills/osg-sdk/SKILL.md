@@ -20,8 +20,9 @@ No npm account, scope or registry is involved. `@osg/sdk` is a tarball served fr
 4. Start with `await osg.ready()`, call `osg.lifecycle.loaded()` at the first interactive frame, honour `onPause`/`onResume`, and flush saves in `onSuspend`.
 5. Gate optional features with `osg.can("rooms")`, never try/catch for "multiplayer unavailable". The single-player game must work with every platform feature off.
 6. Every SDK call can reject (`OsgError` with `code`, `retryable`). Game code must survive it and keep playing.
-7. Never save, send or display secrets, tokens or other players' text. Never render other players' names yourself; use `osg.leaderboards.show()`.
+7. Never save, send or display secrets, tokens or other players' text. Other players' names and avatars come only from SDK data (`leaderboards.top()`/`around()`, room members): draw them as plain text exactly as given, never `innerHTML`, never stored or sent on.
 8. Use `createRng`, `fixedStep` and `createInterpolator` from `@osg/sdk` for deterministic simulation and smooth remote entities.
+9. **The SDK gives data; the game draws the screens.** Leaderboards, results, achievements and stats are screens of the game in its own art direction, built from `top()`, `around()`, `me()`, `achievements.list()` and `stats.get()` (recipe in `osg-scores`). Do not call the deprecated `osg.leaderboards.show()`: it pops a generic platform table over the game. The shell still draws a few things itself (achievement toasts, the chat dock, room invites, sign-in); leave those to it.
 
 ## Before writing multiplayer code, ask
 

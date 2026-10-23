@@ -3,7 +3,8 @@
  * Rules for this file: talk to the platform only through `osg` (no fetch, no WebSocket); gate optional features with osg.can();
  * survive any rejected SDK call; keep everything (fonts, assets, libraries) inside the project.
  */
-import { osg, type Room } from "@osg/sdk";
+import { isOsgError, osg, type Room } from "@osg/sdk";
+import { PERIODS, buildBoard, loadingView, type BoardRow, type BoardView, type Period } from "./board";
 import { ARENA, INTENTS, ROUND_SECONDS, createWorld, scriptedIntent, step, worldForBrain, type Intent, type World } from "./game";
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -81,6 +82,8 @@ async function startRound(): Promise<void> {
   intent = "wander";
   playing = true;
   $("panel").hidden = true;
+  $("scores").hidden = true;
+  $("app").classList.remove("on-scores");
   $("result").textContent = "";
   osg.lifecycle.gameplay(true);
   brain.start();
@@ -143,6 +146,116 @@ function draw(): void {
   ctx.restore();
 }
 
+// ---- leaderboard screen: the game draws it in its own style; the platform supplies the rows (src/board.ts shapes them).
+// Names arrive already checked by the platform: draw them as plain text (textContent), and never store or send them.
+let period: Period = "all";
+let boardRequest = 0;
+
+function setupScores(): void {
+  const tabs = $("periods");
+  for (const p of PERIODS) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = p.label;
+    b.dataset.period = p.id;
+    b.addEventListener("click", () => { period = p.id; void loadScores(); });
+    tabs.append(b);
+  }
+  $("scores-close").addEventListener("click", closeScores);
+  $("scores-retry").addEventListener("click", () => { void loadScores(); });
+  $("scores-signin").addEventListener("click", async () => {
+    const r = await safe(osg.player.requestSignIn({ reason: "Sign in to join the daily and weekly boards" }));
+    if (r?.signedIn) void loadScores();
+  });
+  window.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("scores").hidden) closeScores(); });
+}
+
+function openScores(): void {
+  if (playing) return;
+  $("panel").hidden = true;
+  $("scores").hidden = false;
+  $("app").classList.add("on-scores");
+  void loadScores();
+  ($("periods").querySelector("button[aria-pressed=true]") as HTMLElement | null ?? $("scores-close")).focus();
+}
+
+function closeScores(): void {
+  boardRequest++; // ignore any answer still on its way
+  $("scores").hidden = true;
+  $("app").classList.remove("on-scores");
+  $("panel").hidden = false;
+  $("board").focus();
+}
+
+async function loadScores(): Promise<void> {
+  const req = ++boardRequest;
+  for (const b of $("periods").querySelectorAll<HTMLButtonElement>("button")) b.setAttribute("aria-pressed", String(b.dataset.period === period));
+  paintScores(loadingView());
+  let error: string | undefined;
+  const grab = async <T>(p: Promise<T>): Promise<T | null> => {
+    try { return await p; } catch (e) { error = isOsgError(e) ? e.code : "internal"; return null; } // the code picks the words in board.ts
+  };
+  // two small reads in parallel: the top of the board, and the rows around this player (with their exact rank)
+  const [top, around] = await Promise.all([
+    grab(osg.leaderboards.top("main", { period })).then((r) => r?.items ?? null),
+    grab(osg.leaderboards.around("main", { period })),
+  ]);
+  if (req !== boardRequest) return; // the player switched tab or closed the screen meanwhile
+  paintScores(buildBoard({ top, around, error, mode: osg.mode, guest: osg.player.current.guest, period }));
+}
+
+function paintScores(v: BoardView): void {
+  $("scores-title").textContent = v.title;
+  const list = $("rows");
+  list.replaceChildren();
+  list.classList.toggle("skeleton", v.kind === "loading");
+  $("scores-status").textContent = v.kind === "ready" ? "" : v.message;
+  $("you").textContent = v.kind === "ready" ? v.youText : "";
+  $("scores-note").textContent = v.kind === "ready" ? v.note : "";
+  $("scores-retry").hidden = !(v.kind === "unavailable" && v.retry);
+  const guest = osg.mode !== "standalone" && osg.player.current.guest && osg.can("player");
+  $("scores-signin").hidden = !(guest && (v.kind === "ready" || v.kind === "empty") && period !== "all");
+  if (v.kind === "loading") {
+    for (let i = 0; i < 5; i++) {
+      const li = document.createElement("li");
+      li.setAttribute("aria-hidden", "true");
+      for (let k = 0; k < 4; k++) { const s = document.createElement("span"); if (k === 2) s.className = "bar"; li.append(s); }
+      list.append(li);
+    }
+    return;
+  }
+  if (v.kind !== "ready") return;
+  for (const r of v.rows) list.append(rowElement(r));
+}
+
+function rowElement(r: BoardRow): HTMLLIElement {
+  const li = document.createElement("li");
+  if (r.you) li.classList.add("me");
+  if (r.gapBefore) li.classList.add("gap");
+  const rank = document.createElement("span");
+  rank.className = "rank";
+  rank.textContent = r.rankText;
+  const avatar = document.createElement("span");
+  avatar.className = "avatar";
+  avatar.style.background = r.avatarColor;
+  avatar.textContent = r.initial; // shown until (or instead of) the picture
+  if (r.avatarUrl && osg.mode !== "standalone") { // standalone hosts have no platform art: keep the initial, skip a 404
+    const img = new Image();
+    img.alt = "";
+    img.decoding = "async";
+    img.onload = () => avatar.replaceChildren(img);
+    img.src = r.avatarUrl; // same-origin platform art; if it cannot load, the initial stays
+  }
+  const name = document.createElement("span");
+  name.className = "name";
+  name.textContent = r.you ? `${r.name} (you)` : r.name;
+  const value = document.createElement("span");
+  value.className = "value";
+  value.textContent = r.valueText;
+  li.append(rank, avatar, name, value);
+  return li;
+}
+
 // ---- boot
 async function boot(): Promise<void> {
   const info = await osg.ready();
@@ -158,7 +271,8 @@ async function boot(): Promise<void> {
 
   if (osg.can("boards")) {
     $("board").hidden = false;
-    $("board").addEventListener("click", () => { void safe(osg.leaderboards.show("main")); });
+    $("board").addEventListener("click", () => openScores());
+    setupScores();
   }
 
   // Rooms stub: create a private room (or join the one in an invite link) and show the lobby. Nothing is synchronised yet.

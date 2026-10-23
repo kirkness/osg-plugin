@@ -1,6 +1,6 @@
 # Seed Dash (starter)
 
-A tiny arena game that uses a save, one bounded leaderboard, one achievement, a rooms stub and an NPC brain with a scripted fallback.
+A tiny arena game that uses a save, one bounded leaderboard (drawn by the game itself as one of its screens), one achievement, a rooms stub and an NPC brain with a scripted fallback.
 It exists to be rewritten. Open this folder in Claude Code with the Our Silly Games plugin and say "make this into a game about ...".
 
 ```

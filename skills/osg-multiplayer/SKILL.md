@@ -35,4 +35,4 @@ Declare it in `osg.json` (`features.rooms`, `players`). `players.max` must be at
 
 ## Test
 
-`bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" dev --peers 3 --chaos latency=80-200,drop=2%`, close the host tab to test migration, then `check --players 2`. See `osg-dev`.
+Start the game the way `osg-dev` says (in the background, give the author only the link, stop it with `stop` when asked; never mention process ids or kill commands), adding `--peers 3 --chaos latency=80-200,drop=2%` for pretend players and a bad connection. The author can also test failures from the test page: More → Developer details → "Pretend the host left". Then run `check --players 2`.

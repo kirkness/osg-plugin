@@ -25,6 +25,22 @@
         </div>
         <p id="room" role="status"></p>
       </section>
+      <!-- The leaderboard is a game screen: drawn here in the game's own style from osg.leaderboards data (see src/board.ts). -->
+      <section id="scores" class="card" hidden aria-labelledby="scores-title">
+        <div class="card-head">
+          <h2 id="scores-title">Best round</h2>
+          <button id="scores-close" class="ghost" type="button" aria-label="Back to the menu">Back</button>
+        </div>
+        <div id="periods" class="tabs" role="group" aria-label="Which scores"></div>
+        <p id="scores-status" class="muted" role="status" aria-live="polite"></p>
+        <ol id="rows" class="rows"></ol>
+        <p id="you" class="you-line"></p>
+        <p id="scores-note" class="muted small"></p>
+        <div class="row">
+          <button id="scores-retry" type="button" hidden>Try again</button>
+          <button id="scores-signin" class="ghost" type="button" hidden>Sign in</button>
+        </div>
+      </section>
     </main>
     <script type="module" src="./src/main.ts"></script>
   </body>

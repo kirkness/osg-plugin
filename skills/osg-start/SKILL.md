@@ -39,6 +39,7 @@ Follow the `osg-design` skill now, before any code: hook, friend test, 30-second
 
 ## 5. Build, then check
 
+- Running the game: you start it for the author exactly as the `osg-dev` skill says (in the background, then one sentence with the link to open), and you stop or restart it when they ask. Never give them shell commands, process ids or `kill`/`pkill`/`Ctrl+C` instructions; they should never need a terminal.
 - SDK usage: `osg-sdk`. Local running and testing: `osg-dev`. Multiplayer, NPCs, scores: `osg-multiplayer`, `osg-npcs`, `osg-scores`. Art, sound, fonts: `osg-assets`.
 - Rules that fail games: `osg-rules`. Keep every font, library and asset inside the project; no CDN, no network calls.
 - For a whole first game, `get_playbook` with name `first-game` is the checklist.

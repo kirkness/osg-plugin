@@ -18,10 +18,24 @@ Game code runs on the player's machine, so **any client score can be faked**. Th
 2. Declare every ranked board as `kind: "bounded"` with `min`, `max`, `maxPerSecond` (all required) and ideally `minDurationMs`. Derive them from the game's rules and show the author the arithmetic. `unbounded` boards are labelled "reported" and **never count toward the global ranking**.
 3. Flow: `osg.leaderboards.start(id)` at round start, `submit(run, value, { durationMs })` once at round end. Compute the value from game state; never from user input or storage.
 4. Handle rejection (`rate_limited`, `invalid_argument`, `sign_in_required`) without breaking play; offer sign-in from a user click via `osg.player.requestSignIn()`.
-5. Set `show.top` (default 10, max 100) and `show.around` (max 5). Display with `osg.leaderboards.show(id)`; do not draw other players' names yourself.
+5. Set `show.top` (default 10, max 100) and `show.around` (max 5). **The game draws its own board** (recipe below); the platform only supplies the rows. `osg.leaderboards.show()` is deprecated: never use it in new code, and replace it when you meet it.
 6. Scores from multiplayer rooms (and any room with NPCs) are **unranked**. Keep a single-player board for ranked play.
 7. Guests have their own lane, never in daily/weekly periods and never global.
 8. Achievements and stats are declared in `osg.json` (ids cannot be invented). Prefer stat-bound achievements the server unlocks (`stat` + `target`), reachable in a few sessions; a few hidden ones; teach features. Stats batch with `osg.stats.inc` and `osg.stats.max`.
 9. Do not design around gaming the global ranking; the formula is versioned and may change. Eligibility numbers are in the `limits` doc.
+
+## Recipe: a leaderboard screen that belongs to the game
+
+The board is a game screen like the title or game-over screen, in the game's own fonts, colours, shapes, buttons and sounds. It should look like the author made it, not like a platform pop-up. The starter's `src/board.ts` and `src/main.ts` are a working example.
+
+1. **Data:** fetch in parallel, `osg.leaderboards.top(id, { period })` and `osg.leaderboards.around(id, { period })`. Each entry has `rank`, `name`, `avatar` (`url`, `color`), `value` and `you`; `around` also gives `selfRank`. Scores stay on the platform: never keep your own copy of the board in a save.
+2. **View model** (pure, unit-tested): top rows in rank order; if the player is lower down, a visible gap and then their `around` rows; drop duplicates; flag the `you` row. Ranks above 1000 are banded: show "1000+".
+3. **Draw** in the game's art direction: a highlighted row for the player, the top three marked, avatars from `avatar.url` (same-origin picture) with a disc in `avatar.color` and the name's first letter until it loads or if it fails. Names go in as plain text (`textContent` or canvas `fillText`) exactly as given: never `innerHTML`, never edited, saved or sent anywhere.
+4. **Every state has a designed frame:** loading (placeholder rows, no spinner on a white box), empty ("No scores yet. Set the first one!"), offline or unavailable (friendly words plus a Try again button, never an error code), standalone (`osg.mode === "standalone"`: "Scores on this device only"), boards off (`osg.can("boards")` false: hide the button).
+5. **Periods** declared in `osg.json` become tabs (All time, This week, Today). Guests appear only on all-time: say so and offer `osg.player.requestSignIn()` from a click.
+6. **Input:** keyboard (Tab between buttons, Escape goes back, focus returns to the button that opened it) and touch (44 px targets); fits a 360 px wide phone; respects reduced motion.
+7. **After a round:** show the `submit` result inside the game-over screen ("New best! #12") and a button to the board screen.
+
+The same recipe applies to results, achievements and stats screens: read with `osg.achievements.list()` and `osg.stats.get()`, draw them in the game's own style.
 
 Validate with the `validate_manifest` tool or `osg validate`.

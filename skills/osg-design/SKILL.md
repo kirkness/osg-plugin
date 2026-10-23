@@ -26,11 +26,15 @@ Decide and write down: a palette of 4-6 named colours with roles and checked con
 
 **Banned defaults:** the browser default font; flat grey UI and white cards on grey; **purple or pink gradients**; stock emoji as art; a gradient banner with a centred "Start" button as the whole menu; copying a famous game's look. If the draft contains one of these, replace it and say what you chose instead.
 
+## Every screen is the game's screen
+
+Title, pause, game over, **leaderboard**, achievements and settings are part of the art direction, not afterthoughts. Draw them with the same fonts, palette, shapes, buttons and sounds as play. The platform supplies data (scores, ranks, names, avatars) through the SDK; the game paints it. A board in a plain table, system font or white card fails the bar. Recipe: `osg-scores` ("a leaderboard screen that belongs to the game").
+
 ## Build order
 
 1. A playable first slice fast (one input, one loop, one score). Ugly is fine.
 2. Then **feel**, not features: easing, screen shake with decay, hit-stop, squash and stretch, particles, score pops, sound (procedural Web Audio needs no files), instant restart.
-3. Then the skin: palette, type, art, menu, game over.
+3. Then the skin: palette, type, art, menu, game over, leaderboard screen.
 4. Then platform features (`osg-sdk`).
 
 Ultracode pays off for the first build and the polish pass (`/effort ultracode`, off again with `/effort ultracode off`). You cannot enable it yourself.

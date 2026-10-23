@@ -23,4 +23,5 @@ The starter game here is a placeholder. **Replace its look, feel and rules** wit
 
 - `osg.json` manifest. `slug` must match the game created on the platform (change `slug` and `name` first).
 - `src/game.ts` pure simulation (unit-tested: `bun test`). `src/main.ts` rendering, input and SDK calls.
+- `src/board.ts` the leaderboard screen's view model (unit-tested). The game draws its own board from `osg.leaderboards.top()`/`around()` in the game's style; restyle it with the rest of the game. Never use `osg.leaderboards.show()` (deprecated).
 - `.claude/settings.json` registers the plugin marketplace for this project.
