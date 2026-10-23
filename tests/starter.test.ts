@@ -134,7 +134,7 @@ describe("the game obeys the rules it teaches", () => {
     for (const f of walk(join(S, "src")).filter((x) => x.endsWith(".ts"))) expect(() => t.transformSync(read(join(S, "src", f))), f).not.toThrow();
   });
   test("directory listing sanity", () => {
-    expect(readdirSync(S).sort()).toEqual([".claude", ".gitignore", "CLAUDE.md", "README.md", "index.html", "osg.json", "package.json", "src", "tsconfig.json"]);
+    expect(readdirSync(S).sort()).toEqual([".claude", ".gitignore", "AGENTS.md", "CLAUDE.md", "README.md", "index.html", "osg.json", "package.json", "src", "tsconfig.json"]);
   });
 });
 

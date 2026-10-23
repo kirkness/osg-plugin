@@ -95,7 +95,7 @@ describe("layout", () => {
     expect(existsSync(join(PLUGIN_ROOT, "scripts/osg.mjs"))).toBe(true);
   });
   test("only expected top-level entries, and no symlinks", () => {
-    const allowed = new Set([".claude-plugin", ".mcp.json", "skills", "hooks", "scripts", "templates", "tests", "README.md", "LICENSE", "package.json", "tsconfig.json"]);
+    const allowed = new Set([".claude-plugin", ".codex-plugin", ".agents", "codex", ".mcp.json", "skills", "hooks", "scripts", "templates", "tests", "README.md", "LICENSE", "package.json", "tsconfig.json"]);
     for (const n of readdirSync(PLUGIN_ROOT)) { if (n === "node_modules") continue; expect(allowed.has(n)).toBe(true); }
     for (const f of walk(PLUGIN_ROOT)) expect(lstatSync(join(PLUGIN_ROOT, f)).isSymbolicLink()).toBe(false);
   });

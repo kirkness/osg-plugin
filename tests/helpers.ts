@@ -38,6 +38,7 @@ export function frontmatter(src: string): { meta: Record<string, string>; body: 
 export function publicTextFiles(): string[] {
   const files: string[] = [];
   for (const f of walk(join(PLUGIN_ROOT, "skills"))) files.push(join(PLUGIN_ROOT, "skills", f));
+  for (const f of walk(join(PLUGIN_ROOT, "codex/skills"))) files.push(join(PLUGIN_ROOT, "codex/skills", f));
   for (const f of walk(join(PLUGIN_ROOT, "templates"))) files.push(join(PLUGIN_ROOT, "templates", f));
   for (const f of walk(DOCS_DIR)) files.push(join(DOCS_DIR, f));
   files.push(join(PLUGIN_ROOT, "README.md"));

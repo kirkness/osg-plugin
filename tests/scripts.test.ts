@@ -28,7 +28,7 @@ describe("session-start.sh", () => {
       writeFileSync(join(bin, "curl"), `#!/bin/sh\necho "$@" >> "${log}"\n${o.body === null ? "exit 22" : `printf '%s' "$FAKE_BODY"`}\n`);
       chmodSync(join(bin, "curl"), 0o755);
     }
-    const p = Bun.spawn(["/bin/sh", script], { env: { PATH: `${bin}:/usr/bin:/bin`, CLAUDE_PLUGIN_ROOT: o.root ?? PLUGIN_ROOT, FAKE_BODY: o.body ?? "", ...o.env }, stdout: "pipe", stderr: "pipe" });
+    const p = Bun.spawn(["/bin/sh", script], { env: { PATH: o.noCurl ? bin : `${bin}:/usr/bin:/bin`, CLAUDE_PLUGIN_ROOT: o.root ?? PLUGIN_ROOT, FAKE_BODY: o.body ?? "", ...o.env }, stdout: "pipe", stderr: "pipe" });
     const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
     const code = await p.exited;
     return { out, err, code, calls: existsSync(log) ? readFileSync(log, "utf8").trim().split("\n") : [] };
@@ -69,6 +69,8 @@ describe("session-start.sh", () => {
     const none = await run({ body: statusBody(true), noCurl: true });
     expect(none.code).toBe(0);
     expect(none.out).toBe("");
+    expect(none.err).toBe("");
+    expect(none.calls).toEqual([]);
   });
   test("OSG_NO_UPDATE_CHECK=1 makes no request at all", async () => {
     const r = await run({ body: statusBody(true), env: { OSG_NO_UPDATE_CHECK: "1" } });

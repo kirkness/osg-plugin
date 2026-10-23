@@ -3,11 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Development scripts and tests for the Our Silly Games Claude Code plugin. Not a workspace package.",
+  "description": "Development scripts and tests for the Our Silly Games Claude Code and Codex plugins.",
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "gen:limits": "bun scripts/gen-limits.ts",
-    "sync:cli": "bun scripts/sync-cli.ts"
+    "sync:cli": "bun scripts/sync-cli.ts",
+    "sync:codex": "bun scripts/sync-codex.ts"
   }
 }

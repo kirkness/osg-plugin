@@ -1,0 +1,20 @@
+{
+  "name": "osg",
+  "interface": {
+    "displayName": "Our Silly Games"
+  },
+  "plugins": [
+    {
+      "name": "osg",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
