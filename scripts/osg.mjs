@@ -31538,1065 +31538,11 @@ ${r2.log.split(`
 
 // src/commands/init.ts
 import { existsSync as existsSync14, mkdirSync as mkdirSync12, writeFileSync as writeFileSync8 } from "fs";
-import { basename, dirname as dirname11, join as join20, resolve as resolve6 } from "path";
+import { basename, dirname as dirname11, join as join21, resolve as resolve6 } from "path";
 
-// src/starter.ts
-import { existsSync as existsSync13, readdirSync as readdirSync5, readFileSync as readFileSync12 } from "fs";
-import { dirname as dirname10, join as join19 } from "path";
-function escapeFor(path, s) {
-  if (/\.html?$/.test(path))
-    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-  if (/\.(json|ts|js)$/.test(path))
-    return JSON.stringify(s).slice(1, -1).replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
-  return s;
-}
-var MANIFEST = (slug, name) => JSON.stringify({
-  manifestVersion: 1,
-  slug,
-  name,
-  tagline: "Tap, collect, climb the board.",
-  build: { template: "vite" },
-  input: { modes: ["keyboard", "mouse", "touch"], primary: "mouse", controls: "Click or tap, Space" },
-  players: { min: 1, max: 4 },
-  features: {
-    save: { enabled: true },
-    leaderboards: [{ id: "main", title: "Taps in 10 s", sort: "desc", unit: "count", min: 0, max: 400, maxPerSecond: 20, minDurationMs: 5000, periods: ["all", "day", "week"], show: { top: 10, around: 2 } }],
-    achievements: [{ id: "first-tap", name: "First tap", description: "Tap once.", points: 5 }, { id: "tapper", name: "Tapper", description: "Tap 100 times in total.", stat: "taps", target: 100, points: 20 }],
-    stats: [{ id: "taps", kind: "sum" }]
-  }
-}, null, 2) + `
-`;
-var INDEX_HTML = `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{name}}</title>
-  <link rel="stylesheet" href="./src/style.css">
-</head>
-<body>
-  <main>
-    <h1>{{name}}</h1>
-    <p id="status">Loading...</p>
-    <button id="tap" type="button" disabled>Tap!</button>
-    <p>Taps: <b id="count">0</b> &middot; Best: <b id="best">0</b> &middot; <span id="timer">10.0</span> s</p>
-  </main>
-  <script type="module" src="./src/main.ts"></script>
-</body>
-</html>
-`;
-var MAIN_TS = `// A hello-world OSG game. \`osg\` talks to the platform inside the shell and to a local fallback everywhere else, so this same build runs
-// in \`osg dev\`, on oursilly.games and standalone. Everything must come from your own files: games have no network access.
-import { osg } from "@osg/sdk";
-
-const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
-const status = $("status"), tap = $<HTMLButtonElement>("tap"), count = $("count"), best = $("best"), timer = $("timer");
-
-let taps = 0;
-let run: Awaited<ReturnType<typeof osg.leaderboards.start>> | null = null;
-let startedAt = 0;
-let bestScore = 0;
-
-async function main(): Promise<void> {
-  const info = await osg.ready();
-  status.textContent = \`Hello \${info.player.name}!\`;
-  osg.lifecycle.loaded();
-  if (osg.can("save")) {
-    const saved = await osg.save.get("best");
-    bestScore = Number((saved?.value as { best?: number } | null)?.best ?? 0);
-    best.textContent = String(bestScore);
-  }
-  tap.disabled = false;
-}
-
-async function begin(): Promise<void> {
-  taps = 0; count.textContent = "0";
-  startedAt = performance.now();
-  if (osg.can("boards")) run = await osg.leaderboards.start("main").catch(() => null);
-  const tick = (): void => {
-    const left = 10 - (performance.now() - startedAt) / 1000;
-    if (left <= 0) { timer.textContent = "0.0"; void finish(); return; }
-    timer.textContent = left.toFixed(1);
-    requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
-
-async function finish(): Promise<void> {
-  const score = taps;
-  startedAt = 0;
-  status.textContent = \`Time! \${score} taps.\`;
-  if (score > bestScore) {
-    bestScore = score; best.textContent = String(score);
-    if (osg.can("save")) await osg.save.set("best", { best: score }).catch(() => undefined);
-  }
-  if (run && osg.can("boards")) await osg.leaderboards.submit(run, score, { durationMs: 10_000 }).catch(() => undefined);
-  run = null;
-}
-
-tap.addEventListener("click", () => {
-  if (!startedAt) { void begin(); }
-  taps++; count.textContent = String(taps);
-  if (taps === 1) void osg.achievements.unlock("first-tap").catch(() => undefined);
-  osg.stats.inc("taps");
-});
-
-void main().catch((e) => { status.textContent = String(e?.message ?? e); });
-`;
-var STYLE_CSS = `:root { color-scheme: dark; --bg: #11161b; --fg: #e8eef3; --accent: #3dd6c6; --warn: #f2a93b; }
-* { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--fg); font: 18px/1.4 system-ui, sans-serif; }
-main { text-align: center; padding: 24px; }
-h1 { margin: 0 0 8px; font-size: 2rem; letter-spacing: .02em; }
-button { font: inherit; padding: 14px 28px; border-radius: 12px; border: 2px solid var(--accent); background: transparent; color: var(--fg); cursor: pointer; }
-button:hover:not(:disabled) { background: var(--accent); color: #06201d; }
-button:disabled { opacity: .5; cursor: default; }
-#tap { font-size: 1.6rem; min-width: 180px; min-height: 88px; }
-`;
-var GITIGNORE = `node_modules/
-dist/
-.osg/
-.env*
-*.pem
-*.key
-.DS_Store
-`;
-var CLAUDE_MD = `# {{name}}
-
-This is an Our Silly Games project (\`osg.json\`). Use the \`osg\` plugin skills before writing code: start with \`/osg:osg-start\`.
-
-- \`osg dev\` runs the whole platform locally (multiplayer, boards, saves, NPCs) at http://localhost:4777
-- \`osg check\` runs the same validation and rules as the server, then a headless run
-- \`osg submit\` uploads the source (the server builds, reviews and publishes it, then emails the author)
-- Games have **no network access**: vendor fonts and libraries, no CDN links, no analytics
-- No copyrighted names, art or music; no rude words or imagery
-`;
-var AGENTS_MD = `# {{name}}
-
-This is an Our Silly Games browser game (\`osg.json\`). Use the installed Our Silly Games skills to design, build, preview and publish it.
-The starter is a placeholder: replace its look, feel and rules with the author's idea.
-
-- Start with the \`osg-design\` skill and write \`DESIGN.md\`: the hook, core loop, visual direction and screenshot moment.
-- Use Bun 1.3+, run \`bun install\` and keep \`bun.lock\`: the server needs it to build.
-- \`osg dev\` runs the platform locally at ${SHELL_ORIGINS.dev}, including multiplayer, boards, saves and NPCs.
-- Use \`osg check\` and \`osg shot\` to test the game and inspect it at phone and desktop sizes.
-- Games have **no network access**. Keep fonts, libraries and assets in the project; use \`@osg/sdk\` for platform features.
-- Declare platform features in \`osg.json\`, bound leaderboards and always supply an NPC fallback.
-- Do not include copyrighted names, art or music, rude content, secrets or tokens.
-- Publish only when the author asks. \`osg login\` opens a browser for account consent; \`osg submit\` uploads the source for review and \`osg status\` follows progress.
-- Never read or print the CLI credential file or paste tokens into chat. MCP sign-in and CLI sign-in are separate; let each client manage its own credentials.
-`;
-var PACKAGE_JSON = (slug) => JSON.stringify({
-  name: slug,
-  version: "0.1.0",
-  private: true,
-  type: "module",
-  scripts: { dev: "osg dev", check: "osg check", build: "vite build", submit: "osg submit" },
-  dependencies: { [SDK_PACKAGE]: sdkTarballUrl(SDK_VERSION) },
-  devDependencies: { vite: "^7.0.0", typescript: "^5.6.0" }
-}, null, 2) + `
-`;
-var VITE_CONFIG = `import { defineConfig } from "vite";
-
-// base "./" makes every asset URL relative: the game is served from its own host on the platform and from /__game/<id>/ in \`osg dev\` path mode.
-export default defineConfig({ base: "./", build: { target: "es2022", assetsInlineLimit: 0 } });
-`;
-var TSCONFIG = JSON.stringify({ compilerOptions: { target: "ES2022", module: "ESNext", moduleResolution: "bundler", strict: true, noEmit: true, lib: ["ES2022", "DOM"], skipLibCheck: true }, include: ["src"] }, null, 2) + `
-`;
-var CLAUDE_SETTINGS = JSON.stringify({
-  extraKnownMarketplaces: { [PLUGIN.name]: { source: { source: "github", repo: PLUGIN.githubRepo } } },
-  enabledPlugins: { [`${PLUGIN.name}@${PLUGIN.name}`]: true }
-}, null, 2) + `
-`;
-function embeddedStarter(slug, name) {
-  const files = new Map;
-  files.set("osg.json", MANIFEST(slug, name));
-  files.set("package.json", PACKAGE_JSON(slug));
-  files.set("vite.config.ts", VITE_CONFIG);
-  files.set("tsconfig.json", TSCONFIG);
-  files.set("index.html", INDEX_HTML.replaceAll("{{name}}", escapeFor("index.html", name)));
-  files.set("src/main.ts", MAIN_TS);
-  files.set("src/style.css", STYLE_CSS);
-  files.set(".gitignore", GITIGNORE);
-  files.set("CLAUDE.md", CLAUDE_MD.replaceAll("{{name}}", name));
-  files.set("AGENTS.md", AGENTS_MD.replaceAll("{{name}}", name));
-  files.set(".claude/settings.json", CLAUDE_SETTINGS);
-  return files;
-}
-function readDir(dir) {
-  const files = new Map;
-  const walk = (rel) => {
-    for (const e of readdirSync5(rel ? join19(dir, rel) : dir, { withFileTypes: true })) {
-      const r2 = rel ? `${rel}/${e.name}` : e.name;
-      if (e.isDirectory()) {
-        if (e.name !== "node_modules" && e.name !== ".git")
-          walk(r2);
-      } else if (e.isFile())
-        files.set(r2, new Uint8Array(readFileSync12(join19(dir, r2))));
-    }
-  };
-  walk("");
-  return files;
-}
-function pluginStarterCandidates(here = dirname10(new URL(import.meta.url).pathname)) {
-  return [join19(here, "..", "templates", "starter"), join19(here, "..", "..", "..", "plugin", "templates", "starter")];
-}
-function loadStarter(slug, name, candidates = pluginStarterCandidates()) {
-  for (const c of candidates) {
-    if (!existsSync13(join19(c, "osg.json")))
-      continue;
-    const files = readDir(c);
-    const td3 = new TextDecoder, te5 = new TextEncoder;
-    let tplSlug = "", tplName = "";
-    try {
-      const j = JSON.parse(td3.decode(files.get("osg.json")));
-      tplSlug = j.slug ?? "";
-      tplName = j.name ?? "";
-    } catch {}
-    for (const [p, v] of files) {
-      if (typeof v === "string" || !(/\.(json|md|ts|js|html|css|txt)$/.test(p) || p === ".gitignore"))
-        continue;
-      const nm = escapeFor(p, name), sl = escapeFor(p, slug);
-      let text = td3.decode(v).replaceAll("{{slug}}", sl).replaceAll("{{name}}", nm);
-      if (tplName.length >= 3)
-        text = text.replaceAll(tplName, nm);
-      if (tplSlug.length >= 3)
-        text = text.replaceAll(tplSlug, sl);
-      files.set(p, te5.encode(text));
-    }
-    const m = files.get("osg.json");
-    if (m) {
-      try {
-        const j = JSON.parse(td3.decode(m));
-        j.slug = slug;
-        j.name = name;
-        files.set("osg.json", te5.encode(JSON.stringify(j, null, 2) + `
-`));
-      } catch {}
-    }
-    if (!files.has("AGENTS.md"))
-      files.set("AGENTS.md", AGENTS_MD.replaceAll("{{name}}", name));
-    return { files, source: "plugin" };
-  }
-  return { files: embeddedStarter(slug, name), source: "embedded" };
-}
-
-// src/commands/init.ts
-var initFlags = {
-  slug: { type: "string", description: "game slug (lowercase letters, digits, dashes; default: from the folder name)" },
-  name: { type: "string", description: "game title (default: from the slug)" },
-  force: { type: "boolean", description: "overwrite files that already exist" },
-  install: { type: "boolean", default: true, description: "run `bun install` afterwards (--no-install to skip)" }
-};
-function slugFromName(s) {
-  const slug = s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40).replace(/-+$/, "");
-  return slug.length >= 3 ? slug : `${slug || "game"}-game`.slice(0, 40);
-}
-var titleCase = (slug) => slug.split("-").filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-async function runInit(a, ctx) {
-  const dir = resolve6(ctx.cwd, a.positionals[0] ?? ".");
-  const slug = a.flags.slug ?? slugFromName(basename(dir));
-  const v = validateSlug(slug);
-  if (!v.ok)
-    throw new CliError(`"${slug}" is not a usable slug (${v.reason === "reserved" ? "it is reserved" : "use 3-40 lowercase letters, digits and single dashes"})`, 2, "pass --slug <name>");
-  const name = a.flags.name ?? titleCase(slug);
-  if (name.length < 2 || name.length > 40)
-    throw new CliError("--name must be 2-40 characters", 2);
-  const { files, source } = loadStarter(slug, name, ctx.starterCandidates);
-  const sdk = await resolveSdk(ctx, { fallback: true });
-  if (sdk.note)
-    ctx.out.err(`note: ${sdk.note}`);
-  const pj = files.get("package.json");
-  if (pj !== undefined)
-    files.set("package.json", readPackageText(typeof pj === "string" ? pj : new TextDecoder().decode(pj), sdk.url));
-  const force = !!a.flags.force;
-  const conflicts = [...files.keys()].filter((p) => existsSync14(join20(dir, p)));
-  if (conflicts.length && !force)
-    throw new CliError(`these files already exist:
-${conflicts.slice(0, 10).map((c) => "  " + c).join(`
-`)}`, 2, "run in an empty folder, or pass --force to overwrite");
-  mkdirSync12(dir, { recursive: true });
-  for (const [p, content] of files) {
-    const target = join20(dir, p);
-    mkdirSync12(dirname11(target), { recursive: true });
-    writeFileSync8(target, content);
-  }
-  ctx.out.log(`Created ${files.size} files in ${dir} (${source === "plugin" ? "plugin starter" : "built-in starter"}).`);
-  const project = loadProject(dir);
-  ctx.out.log(`@osg/sdk ${sdk.version} from ${sdk.url}${sdk.source === "latest" ? " (tarball verified)" : " (pinned fallback, not verified)"}.`);
-  ctx.out.log(`osg.json is valid: ${project.manifest.name} (${project.manifest.slug}, template ${project.manifest.build.template}).`);
-  if (a.flags.install && existsSync14(join20(dir, "package.json"))) {
-    ctx.out.log("Installing dependencies with bun...");
-    const r2 = await ctx.runner.run(["bun", "install"], { cwd: dir, env: Object.fromEntries(Object.entries(ctx.env).filter(([, v2]) => v2 !== undefined)), timeoutMs: 180000 });
-    if (r2.code !== 0) {
-      ctx.out.err(`bun install did not finish (${r2.timedOut ? "timed out" : "exit " + r2.code}). Run it later in ${dir}; \`osg check\` and \`osg submit\` need the lockfile it writes.`);
-    } else
-      ctx.out.log("Dependencies installed (bun.lock written: commit it).");
-  }
-  ctx.out.log("");
-  ctx.out.log("Next:");
-  ctx.out.log("  osg dev      run the whole platform locally (http://localhost:4777)");
-  ctx.out.log("  osg check    validate, build and play-test headlessly");
-  ctx.out.log("  osg submit   upload the source for review");
-  return 0;
-}
-
-// src/credentials.ts
-import { chmodSync as chmodSync4, existsSync as existsSync15, mkdirSync as mkdirSync13, readFileSync as readFileSync13, renameSync as renameSync3, rmSync as rmSync10, statSync as statSync6, writeFileSync as writeFileSync9 } from "fs";
-import { join as join21 } from "path";
-var Credentials = exports_external.strictObject({
-  v: exports_external.literal(1),
-  issuer: exports_external.string(),
-  clientId: exports_external.string(),
-  accessToken: exports_external.string().min(1),
-  refreshToken: exports_external.string().min(1).optional(),
-  expiresAt: exports_external.number().int(),
-  scope: exports_external.string().optional(),
-  email: exports_external.string().optional()
-});
-var FILE = "credentials.json";
-function credentialsPath(dir) {
-  return join21(dir, FILE);
-}
-function saveCredentials(dir, c) {
-  mkdirSync13(dir, { recursive: true, mode: 448 });
-  try {
-    chmodSync4(dir, 448);
-  } catch {}
-  const tmp = join21(dir, `.${FILE}.${process.pid}.tmp`);
-  writeFileSync9(tmp, JSON.stringify(Credentials.parse(c), null, 2) + `
-`, { mode: 384 });
-  try {
-    chmodSync4(tmp, 384);
-  } catch {}
-  renameSync3(tmp, credentialsPath(dir));
-}
-function loadCredentials(dir) {
-  const p = credentialsPath(dir);
-  if (!existsSync15(p))
-    return null;
-  try {
-    if ((statSync6(p).mode & 63) !== 0)
-      chmodSync4(p, 384);
-    return Credentials.parse(JSON.parse(readFileSync13(p, "utf8")));
-  } catch {
-    return null;
-  }
-}
-function clearCredentials(dir) {
-  const p = credentialsPath(dir);
-  if (!existsSync15(p))
-    return false;
-  rmSync10(p, { force: true });
-  return true;
-}
-
-// src/config.ts
-import { homedir } from "os";
-import { join as join22 } from "path";
-function assertSecureUrl(key2, value) {
-  let u;
-  try {
-    u = new URL(value);
-  } catch {
-    throw new CliError(`OSG_ENDPOINTS.${key2} is not a URL`, 2);
-  }
-  const loopback = u.hostname === "localhost" || u.hostname === "127.0.0.1" || u.hostname === "[::1]";
-  if (u.protocol !== "https:" && !(u.protocol === "http:" && loopback))
-    throw new CliError(`OSG_ENDPOINTS.${key2} must be https (plain http is only allowed for localhost)`, 2, "your sign-in token would otherwise cross the network unencrypted");
-}
-function endpoints(env = process.env) {
-  const base = { site: `https://${HOSTS.site}`, mcp: `https://${HOSTS.mcp}${PATHS.mcp}`, api: `https://${HOSTS.api}` };
-  const o = env.OSG_ENDPOINTS;
-  if (!o)
-    return base;
-  try {
-    const j = JSON.parse(o);
-    const e = { site: j.site ?? base.site, mcp: j.mcp ?? base.mcp, api: j.api ?? base.api };
-    for (const [k, v] of Object.entries(e))
-      assertSecureUrl(k, v);
-    return e;
-  } catch (err2) {
-    if (err2 instanceof CliError)
-      throw err2;
-    return base;
-  }
-}
-function configDir(env = process.env, home = homedir()) {
-  if (env.OSG_CONFIG_DIR)
-    return env.OSG_CONFIG_DIR;
-  if (env.XDG_CONFIG_HOME)
-    return join22(env.XDG_CONFIG_HOME, "osg");
-  return join22(home, ".config", "osg");
-}
-
-// src/oauth.ts
-var CLI_CLIENT_ID = OSG_CLI_CLIENT_ID;
-async function getJson(f, url2, what) {
-  let res;
-  try {
-    res = await f(url2, { headers: { accept: "application/json" }, redirect: "error", signal: AbortSignal.timeout(1e4) });
-  } catch (e) {
-    throw new CliError(`could not reach ${what} (${sanitize(e.message, 120)})`, 1, "check your network connection");
-  }
-  if (!res.ok)
-    throw new CliError(`${what} answered HTTP ${res.status}`);
-  try {
-    return await res.json();
-  } catch {
-    throw new CliError(`${what} did not return JSON`);
-  }
-}
-var sameOrigin = (a, b) => {
-  try {
-    return new URL(a).origin === new URL(b).origin;
-  } catch {
-    return false;
-  }
-};
-async function discover(ep, f = fetch) {
-  const mcpOrigin = new URL(ep.mcp).origin;
-  const prm = await getJson(f, `${mcpOrigin}/.well-known/oauth-protected-resource`, "the MCP resource metadata");
-  const servers = prm.authorization_servers;
-  const issuer = Array.isArray(servers) && typeof servers[0] === "string" ? servers[0] : ep.site;
-  if (!sameOrigin(issuer, ep.site))
-    throw new CliError(`the MCP server names an unexpected authorization server (${sanitize(issuer, 80)})`, 1, "refusing to continue");
-  const md = await getJson(f, `${new URL(issuer).origin}/.well-known/oauth-authorization-server`, "the authorization server metadata");
-  const m = md;
-  if (typeof m.issuer !== "string" || !sameOrigin(m.issuer, ep.site))
-    throw new CliError("authorization server metadata has the wrong issuer", 1, "refusing to continue");
-  for (const k of ["authorization_endpoint", "token_endpoint"]) {
-    if (typeof m[k] !== "string" || !sameOrigin(m[k], ep.site))
-      throw new CliError(`authorization server metadata has an unexpected ${k}`, 1, "refusing to continue");
-  }
-  return { issuer: m.issuer, authorization_endpoint: m.authorization_endpoint, token_endpoint: m.token_endpoint };
-}
-function pkce() {
-  const v = new Uint8Array(32);
-  crypto.getRandomValues(v);
-  const verifier = b64u.enc(v);
-  return { verifier, challenge: crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)).then((d) => b64u.enc(new Uint8Array(d))) };
-}
-var randomState = () => {
-  const b = new Uint8Array(16);
-  crypto.getRandomValues(b);
-  return b64u.enc(b);
-};
-async function login(o) {
-  const f = o.fetch ?? fetch;
-  const now = o.now ?? Date.now;
-  const as = await discover(o.endpoints, f);
-  const { verifier, challenge } = pkce();
-  const state = randomState();
-  let timeoutId;
-  let resolveCb;
-  const cb = new Promise((r2) => {
-    resolveCb = r2;
-  });
-  let served = false;
-  const server = Bun.serve({
-    hostname: "127.0.0.1",
-    port: 0,
-    fetch(req) {
-      const u = new URL(req.url);
-      if (u.pathname !== "/callback" || req.method !== "GET")
-        return new Response("not found", { status: 404 });
-      if (served)
-        return new Response("this login link was already used", { status: 410 });
-      served = true;
-      resolveCb(u.searchParams);
-      return new Response("<!doctype html><meta charset=utf-8><title>osg</title><p>You can close this tab and go back to the terminal.</p>", { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer" } });
-    }
-  });
-  try {
-    const redirectUri = `http://127.0.0.1:${server.port}/callback`;
-    const url2 = new URL(as.authorization_endpoint);
-    for (const [k, v] of Object.entries({
-      response_type: "code",
-      client_id: CLI_CLIENT_ID,
-      redirect_uri: redirectUri,
-      state,
-      code_challenge: await challenge,
-      code_challenge_method: "S256",
-      scope: MCP_SCOPES.join(" "),
-      resource: o.endpoints.mcp
-    }))
-      url2.searchParams.set(k, v);
-    o.print("Opening your browser to sign in to Our Silly Games. If it does not open, visit:");
-    o.print(url2.href);
-    await Promise.resolve(o.openUrl(url2.href)).catch(() => false);
-    const timeout = new Promise((_, rej) => {
-      timeoutId = setTimeout(() => rej(new CliError("timed out waiting for the browser (5 minutes)", 1, "run `osg login` again")), o.timeoutMs ?? 300000);
-    });
-    const q = await Promise.race([cb, timeout]);
-    if (q.get("error"))
-      throw new CliError(`sign-in was refused: ${sanitize(q.get("error_description") ?? q.get("error"), 160)}`);
-    if (q.get("state") !== state)
-      throw new CliError("the sign-in response did not match this request (state mismatch)", 1, "run `osg login` again");
-    const iss = q.get("iss");
-    if (iss !== null && iss !== as.issuer)
-      throw new CliError("the sign-in response came from an unexpected issuer", 1, "refusing to continue");
-    const code = q.get("code");
-    if (!code)
-      throw new CliError("the sign-in response had no code");
-    const tok = await tokenRequest(f, as.token_endpoint, { grant_type: "authorization_code", code, redirect_uri: redirectUri, client_id: CLI_CLIENT_ID, code_verifier: verifier, resource: o.endpoints.mcp });
-    const creds = toCredentials(tok, as.issuer, now());
-    saveCredentials(o.configDir, creds);
-    return creds;
-  } finally {
-    clearTimeout(timeoutId);
-    await server.stop(true);
-  }
-}
-async function tokenRequest(f, endpoint, params) {
-  let res;
-  try {
-    res = await f(endpoint, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" }, body: new URLSearchParams(params), redirect: "error", signal: AbortSignal.timeout(15000) });
-  } catch (e) {
-    throw new CliError(`could not reach the token endpoint (${sanitize(e.message, 120)})`);
-  }
-  const text = await res.text();
-  let json3 = {};
-  try {
-    json3 = JSON.parse(text);
-  } catch {}
-  if (!res.ok)
-    throw new CliError(`token request failed: ${sanitize(json3.error_description ?? json3.error ?? `HTTP ${res.status}`, 160)}`);
-  return json3;
-}
-function toCredentials(t2, issuer, nowMs, clientId = CLI_CLIENT_ID) {
-  if (typeof t2.access_token !== "string" || !t2.access_token)
-    throw new CliError("the token response had no access token");
-  const expiresIn = typeof t2.expires_in === "number" ? t2.expires_in : 3600;
-  return {
-    v: 1,
-    issuer,
-    clientId,
-    accessToken: t2.access_token,
-    ...typeof t2.refresh_token === "string" ? { refreshToken: t2.refresh_token } : {},
-    expiresAt: nowMs + expiresIn * 1000,
-    ...typeof t2.scope === "string" ? { scope: t2.scope } : {}
-  };
-}
-async function accessToken(o) {
-  const env = o.env ?? process.env;
-  if (env.OSG_TOKEN)
-    return env.OSG_TOKEN;
-  const now = (o.now ?? Date.now)();
-  const c = loadCredentials(o.configDir);
-  if (!c)
-    throw new CliError("you are not signed in", 1, "run `osg login`");
-  if (!sameOrigin(c.issuer, o.endpoints.site))
-    throw new CliError("stored credentials belong to another server", 1, "run `osg login` again");
-  if (c.expiresAt - now > (o.skewMs ?? 60000))
-    return c.accessToken;
-  if (!c.refreshToken)
-    throw new CliError("your sign-in has expired", 1, "run `osg login`");
-  const as = await discover(o.endpoints, o.fetch ?? fetch);
-  if (as.issuer !== c.issuer)
-    throw new CliError("stored credentials belong to another server", 1, "run `osg login` again");
-  const tok = await tokenRequest(o.fetch ?? fetch, as.token_endpoint, { grant_type: "refresh_token", refresh_token: c.refreshToken, client_id: c.clientId, resource: o.endpoints.mcp });
-  const next = toCredentials(tok, as.issuer, now, c.clientId);
-  if (!next.refreshToken)
-    next.refreshToken = c.refreshToken;
-  saveCredentials(o.configDir, next);
-  return next.accessToken;
-}
-
-// src/commands/auth.ts
-var loginFlags = { "no-browser": { type: "boolean", description: "do not open a browser; print the link only" } };
-async function runLogin(a, ctx) {
-  const dir = configDir(ctx.env, ctx.home);
-  await login({
-    endpoints: ctx.endpoints,
-    configDir: dir,
-    fetch: ctx.fetch,
-    print: (l) => ctx.out.log(l),
-    openUrl: (u) => a.flags["no-browser"] ? false : ctx.openUrl(u),
-    now: ctx.now
-  });
-  ctx.out.log("Signed in. The token is stored in " + dir + " (readable only by you).");
-  return 0;
-}
-async function runLogout(_a4, ctx) {
-  const dir = configDir(ctx.env, ctx.home);
-  const had = !!loadCredentials(dir);
-  clearCredentials(dir);
-  ctx.out.log(had ? "Signed out: the stored token was deleted. (It stays valid on the server until it expires; sign out of oursilly.games to revoke sessions.)" : "You were not signed in.");
-  return 0;
-}
-
-// src/commands/pack.ts
-var packFlags = { out: { type: "string", alias: "o", description: "where to write the zip (default .osg/source.zip)" }, list: { type: "boolean", description: "print every file that goes into the archive" } };
-async function runPack(a, ctx) {
-  const p = loadProject(a.positionals[0] ?? ctx.cwd);
-  if (a.flags.list) {
-    for (const f of planPack(p.root, p.manifest).files)
-      ctx.out.log(sanitize(f.path, 220));
-  }
-  const r2 = await packProject(p.root, p.manifest, a.flags.out);
-  ctx.out.log(`${r2.path}`);
-  ctx.out.log(`${r2.files} files, ${(r2.unpackedBytes / 1024).toFixed(0)} KiB unpacked, ${(r2.bytes / 1024).toFixed(0)} KiB zipped`);
-  ctx.out.log(`sha256 ${r2.sha256}`);
-  if (r2.skippedSecrets.length)
-    ctx.out.err(`left out ${r2.skippedSecrets.length} file(s) that look like secrets: ${r2.skippedSecrets.slice(0, 5).map((s) => sanitize(s, 60)).join(", ")}`);
-  return 0;
-}
-
-// src/commands/shot.ts
-import { join as join23 } from "path";
-import { mkdirSync as mkdirSync14, mkdtempSync as mkdtempSync3, rmSync as rmSync11, writeFileSync as writeFileSync10 } from "fs";
-import { tmpdir as tmpdir3 } from "os";
-var shotFlags = {
-  out: { type: "string", alias: "o", description: "directory for the screenshots (default .osg/shots)" },
-  count: { type: "number", default: 3, description: "how many screenshots" },
-  interval: { type: "number", default: 3, description: "seconds between screenshots (the monkey plays in between)" },
-  width: { type: "number", default: 1280, description: "viewport width" },
-  height: { type: "number", default: 720, description: "viewport height" },
-  seed: { type: "number", default: 1, description: "monkey seed" },
-  "no-build": { type: "boolean", description: "do not (re)build before the shots" }
-};
-async function runShot(a, ctx) {
-  const p = loadProject(a.positionals[0] ?? ctx.cwd);
-  if (!a.flags["no-build"] && p.manifest.build.template !== "static") {
-    const b = await buildProject(p.root, p.manifest, { runner: ctx.runner, env: ctx.env, log: (s) => ctx.out.err(s) });
-    if (!b.ok)
-      throw new CliError(`the build failed: ${sanitize(b.issues[0] ?? "see `osg build`", 200)}`, 1, "run `osg build` to see the log");
-  }
-  const outDir = a.flags.out ?? join23(p.root, ".osg", "shots");
-  mkdirSync14(outDir, { recursive: true });
-  const dataDir = mkdtempSync3(join23(tmpdir3(), "osg-shot-"));
-  const session = await ctx.browser.launch(p.root, ctx.env);
-  const server = await ctx.startDev({ projectDir: p.root, port: 0, dataDir, seedBoards: true, log: () => {
-    return;
-  } });
-  const files = [];
-  try {
-    const context = await session.browser.newContext({ viewport: { width: a.flags.width, height: a.flags.height } });
-    const page2 = await context.newPage();
-    await page2.goto(`${server.url}/?as=shot`, { waitUntil: "domcontentloaded" });
-    await page2.waitForFunction(() => window.__osgDev?.state().launched === true, null, { timeout: 30000 });
-    await page2.waitForSelector("#stage iframe", { timeout: 15000 });
-    const rng = mulberry32(a.flags.seed);
-    const frame = page2.locator("#stage iframe").first();
-    const n = Math.max(1, Math.min(20, a.flags.count));
-    for (let i2 = 1;i2 <= n; i2++) {
-      await page2.waitForTimeout(1200);
-      const box = await frame.boundingBox();
-      if (box && i2 > 1)
-        await runMonkey(page2, box, Math.max(0, a.flags.interval * 1000 - 1200), rng);
-      const b2 = await frame.boundingBox() ?? box;
-      const buf = b2 ? await page2.screenshot({ clip: b2 }) : await page2.screenshot();
-      const file2 = join23(outDir, `shot-${i2}.png`);
-      writeFileSync10(file2, buf);
-      files.push(file2);
-    }
-    await context.close();
-  } finally {
-    await session.close();
-    await server.close();
-    rmSync11(dataDir, { recursive: true, force: true });
-  }
-  for (const f of files)
-    ctx.out.log(f);
-  return 0;
-}
-
-// src/mcp.ts
-var PROTOCOL = "2025-06-18";
-
-class McpClient {
-  o;
-  session = null;
-  initialised = false;
-  nextId = 1;
-  f;
-  constructor(o) {
-    this.o = o;
-    this.f = o.fetch ?? fetch;
-  }
-  async post(body, token, expectResponse) {
-    const headers2 = {
-      "content-type": "application/json",
-      accept: "application/json, text/event-stream",
-      authorization: `Bearer ${token}`,
-      "mcp-protocol-version": PROTOCOL,
-      [HEADERS.client]: `cli/${this.o.version}`
-    };
-    if (this.session)
-      headers2["mcp-session-id"] = this.session;
-    let res;
-    try {
-      res = await this.f(this.o.url, { method: "POST", headers: headers2, body: JSON.stringify(body), redirect: "error", signal: AbortSignal.timeout(this.o.timeoutMs ?? 60000) });
-    } catch (e) {
-      throw new CliError(`could not reach the OSG server (${sanitize(e.message, 120)})`, 1, "check your network connection and try again");
-    }
-    const sid = res.headers.get("mcp-session-id");
-    if (sid)
-      this.session = sid;
-    if (res.status === 401)
-      throw new CliError("the server did not accept your sign-in", 1, "run `osg login`");
-    if (res.status === 403) {
-      const t2 = sanitize(await res.text(), 200);
-      throw new CliError(/insufficient_scope/.test(t2) ? "your sign-in does not allow this (missing scope)" : "the server refused this request", 1, "run `osg login` again and accept all permissions");
-    }
-    if (res.status === 429)
-      throw new CliError("too many requests, slow down", 1, "wait a minute and try again");
-    if (!expectResponse)
-      return res.ok || res.status === 202 ? res : (() => {
-        throw new CliError(`the server answered HTTP ${res.status}`);
-      })();
-    if (!res.ok)
-      throw new CliError(`the server answered HTTP ${res.status}`);
-    return res;
-  }
-  async rpc(method, params, token) {
-    const id3 = this.nextId++;
-    const res = await this.post({ jsonrpc: "2.0", id: id3, method, params }, token, true);
-    const msg2 = await readRpc(res, id3);
-    if (msg2.error)
-      throw new CliError(`server error: ${sanitize(msg2.error.message ?? "unknown")}`);
-    return msg2.result;
-  }
-  async init(token) {
-    if (this.initialised)
-      return;
-    await this.rpc("initialize", { protocolVersion: PROTOCOL, capabilities: {}, clientInfo: { name: "osg-cli", version: this.o.version } }, token);
-    await this.post({ jsonrpc: "2.0", method: "notifications/initialized" }, token, false);
-    this.initialised = true;
-  }
-  async call(name, args) {
-    const token = await this.o.token();
-    await this.init(token);
-    const result = await this.rpc("tools/call", { name, arguments: args }, token);
-    if (!result)
-      throw new CliError("the server returned an empty result");
-    const text = (result.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join(`
-`);
-    if (result.isError)
-      throw new CliError(sanitize(text || `${name} failed`, 400));
-    let payload = result.structuredContent;
-    if (payload === undefined) {
-      try {
-        payload = JSON.parse(text);
-      } catch {
-        throw new CliError(`unexpected response from ${name}`, 1, "update the Our Silly Games plugin in your app, then try again");
-      }
-    }
-    const parsed = MCP_TOOLS[name].output.safeParse(payload);
-    if (!parsed.success)
-      throw new CliError(`the server's answer to ${name} does not match this CLI version`, 1, "update the Our Silly Games plugin in your app, then try again");
-    return parsed.data;
-  }
-}
-async function readRpc(res, id3) {
-  const ct = res.headers.get("content-type") ?? "";
-  const text = await res.text();
-  if (ct.includes("text/event-stream")) {
-    for (const block of text.split(/\n\n/)) {
-      const data = block.split(`
-`).filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trimStart()).join(`
-`);
-      if (!data)
-        continue;
-      try {
-        const m = JSON.parse(data);
-        if (m.id === id3)
-          return m;
-      } catch {}
-    }
-    throw new CliError("the server's response had no matching message");
-  }
-  try {
-    const m = JSON.parse(text);
-    const one = Array.isArray(m) ? m.find((x2) => x2.id === id3) : m;
-    if (!one)
-      throw new Error("no message");
-    return one;
-  } catch {
-    throw new CliError("the server's response was not valid JSON-RPC");
-  }
-}
-
-// src/commands/status.ts
-var statusFlags = {
-  watch: { type: "boolean", alias: "w", description: "keep checking every 10 seconds until the submission finishes" },
-  log: { type: "boolean", description: "also print the tail of the build log" },
-  dev: { type: "boolean", description: "only say whether this project's game is running locally (osg dev) and its link; no sign-in needed" }
-};
-function devStatusLine(ctx, from) {
-  let root;
-  try {
-    root = findProjectRoot(from);
-  } catch {
-    return null;
-  }
-  const p = loadProject(root);
-  const name = sanitize(p.manifest.name, 80);
-  const s = liveDevState(p.root, ctx.procs);
-  return s ? `${name} is running: ${s.url}` : `${name} is not running.`;
-}
-async function runStatus(a, ctx) {
-  if (a.flags.dev) {
-    if (a.positionals[0] !== undefined)
-      throw new UsageError("--dev takes no submission id (run it in the game's folder)");
-    const line = devStatusLine(ctx, ctx.cwd);
-    if (!line)
-      loadProject(ctx.cwd);
-    ctx.out.log(line);
-    return 0;
-  }
-  if (a.positionals[0] === undefined) {
-    const line = devStatusLine(ctx, ctx.cwd);
-    if (line)
-      ctx.out.log(line);
-  }
-  const dir = configDir(ctx.env, ctx.home);
-  const mcp2 = new McpClient({ url: ctx.endpoints.mcp, version: ctx.version, fetch: ctx.fetch, token: () => accessToken({ endpoints: ctx.endpoints, configDir: dir, env: ctx.env, fetch: ctx.fetch, now: ctx.now }) });
-  let id3 = a.positionals[0];
-  if (!id3) {
-    const p = loadProject(ctx.cwd);
-    const g = (await mcp2.call("list_my_games", {})).find((x2) => x2.slug === p.manifest.slug);
-    id3 = g?.latestSubmission?.id;
-    if (!id3)
-      throw new CliError(`no submission found for ${p.manifest.slug}`, 1, "run `osg submit` first, or pass a submission id");
-  }
-  const submissionId = id3;
-  const deadline = ctx.now() + 25 * 60000;
-  for (;; ) {
-    const r2 = await mcp2.call("get_verification_report", { submissionId });
-    ctx.out.log(`Submission ${sanitize(r2.id, 40)}: ${r2.status}${r2.step ? ` (${sanitize(r2.step, 30)})` : ""}`);
-    if (r2.verdictRoute)
-      ctx.out.log(`  verdict: ${r2.verdictRoute}`);
-    if (r2.emailedTo)
-      ctx.out.log(`  we email ${sanitize(r2.emailedTo, 80)} when it is done`);
-    for (const f of r2.findings)
-      for (const l of formatFinding(f))
-        ctx.out.log(l);
-    if (r2.resubmitHint)
-      ctx.out.log(`  next: ${sanitize(r2.resubmitHint, 300)}`);
-    if (a.flags.log && r2.buildLogTail) {
-      ctx.out.log("  build log (untrusted text, last lines):");
-      for (const l of sanitize(r2.buildLogTail, 20000).split(`
-`).slice(-20))
-        ctx.out.log(`    ${l}`);
-    }
-    const terminal = SUBMISSION_TERMINAL.has(r2.status);
-    if (terminal || !a.flags.watch)
-      return r2.status === "rejected" || r2.status === "failed_system" ? 1 : 0;
-    if (ctx.now() > deadline)
-      throw new CliError("still not finished after 25 minutes", 1, "check your email or run `osg status` again later");
-    await ctx.sleep(1e4);
-  }
-}
-
-// src/commands/submit.ts
-import { mkdirSync as mkdirSync15, writeFileSync as writeFileSync11 } from "fs";
-import { join as join24 } from "path";
-
-// src/upload.ts
-function assertUploadUrl(putUrl, apiBase) {
-  let u;
-  try {
-    u = new URL(putUrl);
-  } catch {
-    throw new CliError("the server returned an invalid upload URL");
-  }
-  const base = new URL(apiBase);
-  const loopbackOk = base.hostname === "127.0.0.1" || base.hostname === "localhost";
-  if (u.origin !== base.origin || u.protocol !== "https:" && !loopbackOk)
-    throw new CliError(`refusing to upload to an unexpected address (${sanitize(u.origin, 80)})`, 1, `uploads only go to ${base.origin}`);
-  if (!u.pathname.startsWith("/v1/uploads/"))
-    throw new CliError("the upload URL has an unexpected path", 1, "refusing to upload");
-  return u;
-}
-async function putArchive(putUrl, zip, o) {
-  const u = assertUploadUrl(putUrl, o.apiBase);
-  const f = o.fetch ?? fetch;
-  let res;
-  try {
-    res = await f(u, { method: "PUT", headers: { "content-type": "application/zip", [HEADERS.client]: `cli/${o.version}` }, body: new Blob([zip.slice()]), redirect: "error", signal: AbortSignal.timeout(o.timeoutMs ?? 300000) });
-  } catch (e) {
-    throw new CliError(`the upload failed (${sanitize(e.message, 120)})`, 1, "check your network connection; run `osg submit` again");
-  }
-  const text = await res.text();
-  if (!res.ok) {
-    let msg2 = `HTTP ${res.status}`;
-    try {
-      const e = ApiError.safeParse(JSON.parse(text));
-      if (e.success)
-        msg2 = `${e.data.error.code}${e.data.error.message ? ": " + e.data.error.message : ""}`;
-    } catch {}
-    const hint = res.status === 409 ? "this upload slot was already used or the file changed in transit; run `osg submit` again" : res.status === 413 ? "the archive is over the size limit" : res.status === 401 || res.status === 403 ? "the upload slot expired; run `osg submit` again" : undefined;
-    throw new CliError(`the upload was refused: ${sanitize(msg2, 200)}`, 1, hint);
-  }
-  try {
-    const parsed = ROUTES.upload.res.parse(JSON.parse(text));
-    return { bytes: parsed.bytes, sha256: parsed.sha256 };
-  } catch {
-    throw new CliError("the upload answered with an unexpected body", 1, "update the Our Silly Games plugin in your app, then try again");
-  }
-}
-async function pluginNag(o) {
-  try {
-    const u = new URL(ROUTES.pluginStatus.path, o.apiBase);
-    u.searchParams.set("cli", o.version);
-    const res = await (o.fetch ?? fetch)(u, { headers: { accept: "application/json", [HEADERS.client]: `cli/${o.version}` }, redirect: "error", signal: AbortSignal.timeout(2500) });
-    if (!res.ok)
-      return null;
-    const j = ROUTES.pluginStatus.res.parse(await res.json());
-    return j.outdated && j.message ? sanitize(j.message, 300) : null;
-  } catch {
-    return null;
-  }
-}
-
-// src/commands/submit.ts
-var submitFlags = {
-  yes: { type: "boolean", alias: "y", description: "answer yes to the questions (creating the game, accepting the creator terms)" },
-  "accept-creator-terms": { type: "boolean", description: "accept the creator terms when creating the game (needed in non-interactive runs)" },
-  changelog: { type: "string", description: "what changed (max 500 characters; default: osg.json changelog)" },
-  "dry-run": { type: "boolean", description: "validate and pack, then stop before anything leaves your machine" },
-  check: { type: "boolean", default: true, description: "run the source validation first (--no-check to skip)" }
-};
-async function runSubmit(a, ctx) {
-  const p = loadProject(a.positionals[0] ?? ctx.cwd);
-  const err2 = (s) => ctx.out.err(s);
-  err2(`Submitting ${p.manifest.name} (${p.manifest.slug})`);
-  if (a.flags.check) {
-    const c = validateSourceTree(p.root, p.manifest, ctx);
-    printSourceCheck(c, ctx);
-    if (!c.ok)
-      throw new CliError("the source has problems the server would reject too", 1, "fix the items above (run `osg validate`), then submit again");
-    err2(`  source ok (${c.fileCount} files)`);
-  }
-  const plan = planPack(p.root, p.manifest);
-  const archive = await buildArchive(plan);
-  err2(`  packed ${archive.files} files, ${(archive.bytes / 1024).toFixed(0)} KiB, sha256 ${archive.sha256.slice(0, 12)}...`);
-  mkdirSync15(join24(p.root, ".osg"), { recursive: true });
-  writeFileSync11(join24(p.root, ".osg", "source.zip"), archive.zip);
-  if (archive.skippedSecrets.length)
-    err2(`  left out ${archive.skippedSecrets.length} secret-looking file(s)`);
-  if (a.flags["dry-run"]) {
-    ctx.out.log(`dry run: nothing was uploaded (${archive.bytes} bytes, sha256 ${archive.sha256})`);
-    return 0;
-  }
-  const dir = configDir(ctx.env, ctx.home);
-  const mcp2 = new McpClient({ url: ctx.endpoints.mcp, version: ctx.version, fetch: ctx.fetch, token: () => accessToken({ endpoints: ctx.endpoints, configDir: dir, env: ctx.env, fetch: ctx.fetch, now: ctx.now }) });
-  const nag = pluginNag({ apiBase: ctx.endpoints.api, version: ctx.version, fetch: ctx.fetch });
-  const who = await mcp2.call("whoami", {});
-  err2(`  signed in as ${sanitize(who.email ?? who.name, 80)}`);
-  const games = await mcp2.call("list_my_games", {});
-  let game = games.find((g) => g.slug === p.manifest.slug);
-  if (!game) {
-    const terms = who.creatorTermsUrl;
-    const q = `The game "${p.manifest.slug}" does not exist yet. Create it${who.canCreate ? "" : " and accept the creator terms" + (terms ? ` (${terms})` : "")}?`;
-    const ok = a.flags.yes ? who.canCreate || !!a.flags["accept-creator-terms"] : await ctx.confirm(q);
-    if (!ok) {
-      throw new CliError(who.canCreate ? `the game "${p.manifest.slug}" has not been created` : "the creator terms have not been accepted", 1, `${who.canCreate ? "pass --yes to create it" : "read the terms" + (terms ? ` at ${terms}` : "") + " and pass --yes --accept-creator-terms"}`);
-    }
-    const created = await mcp2.call("create_game", { slug: p.manifest.slug, name: p.manifest.name, acceptCreatorTerms: true });
-    err2(`  created game ${created.slug}`);
-    game = (await mcp2.call("list_my_games", {})).find((g) => g.gameId === created.gameId);
-    if (!game)
-      throw new CliError("the game was created but is not listed yet; try `osg submit` again");
-  }
-  const slot = await mcp2.call("request_upload", { gameId: game.gameId, bytes: archive.bytes, sha256: archive.sha256 });
-  if (archive.bytes > slot.maxBytes)
-    throw new CliError(`the archive (${archive.bytes} bytes) is over this slot's limit (${slot.maxBytes})`);
-  err2("  uploading...");
-  const up = await putArchive(slot.putUrl, archive.zip, { apiBase: ctx.endpoints.api, fetch: ctx.fetch, version: ctx.version });
-  if (up.sha256 !== archive.sha256)
-    throw new CliError("the server stored different bytes than were sent", 1, "run `osg submit` again");
-  const res = await mcp2.call("submit_version", { uploadId: slot.uploadId, ...a.flags.changelog ?? p.manifest.changelog ? { changelog: a.flags.changelog ?? p.manifest.changelog } : {} });
-  ctx.out.log(res.message);
-  const n = await nag;
-  if (n)
-    err2(n);
-  return 0;
-}
-
-// src/commands/upload.ts
-import { readFileSync as readFileSync14 } from "fs";
-var uploadFlags = { url: { type: "string", description: "the signed upload URL returned by request_upload (`-` reads it from stdin)" } };
-async function runUpload(a, ctx) {
-  const file2 = a.positionals[0];
-  if (!file2)
-    throw new CliError("usage: osg upload <source.zip> --url <putUrl>", 2);
-  let url2 = a.flags.url;
-  if (url2 === "-")
-    url2 = (await ctx.readStdin()).trim();
-  if (!url2)
-    throw new CliError("--url is required", 2);
-  const zip = new Uint8Array(readFileSync14(file2));
-  const r2 = await putArchive(url2, zip, { apiBase: ctx.endpoints.api, fetch: ctx.fetch, version: ctx.version });
-  const local = await sha256Hex(zip);
-  if (r2.sha256 !== local)
-    throw new CliError("the server stored different bytes than were sent", 1);
-  ctx.out.log(`uploaded ${r2.bytes} bytes, sha256 ${r2.sha256}`);
-  return 0;
-}
-
-// src/commands/update-sdk.ts
-var updateSdkFlags = {
-  install: { type: "boolean", default: true, description: "run `bun install` afterwards so the lockfile pins the new integrity (--no-install to skip)" }
-};
-async function runUpdateSdk(a, ctx) {
-  const p = loadProject(a.positionals[0] ?? ctx.cwd);
-  const pkg = readPackage(p.root);
-  if (!pkg)
-    throw new CliError("no package.json in the project", 2, "`osg update-sdk` only applies to projects that depend on @osg/sdk");
-  const r2 = await resolveSdk(ctx, { fallback: false });
-  const before = pkg.spec;
-  const beforeVersion = installedSdkVersion(p.root, before) ?? (before ? specVersion(before) : null);
-  if (before === r2.url) {
-    ctx.out.log(`${SDK_PACKAGE} is already at ${r2.version} (${r2.url}).`);
-    return 0;
-  }
-  writePackage(pkg, r2.url);
-  ctx.out.log(`${SDK_PACKAGE}: ${beforeVersion ?? before ?? "(not a dependency)"} -> ${r2.version}`);
-  ctx.out.log(`  package.json now has ${r2.url}`);
-  ctx.out.log(`  tarball verified (${r2.integrity})`);
-  if (a.flags.install) {
-    ctx.out.log("Installing with bun to update the lockfile...");
-    const env = Object.fromEntries(Object.entries(ctx.env).filter(([, v]) => v !== undefined));
-    const i2 = await ctx.runner.run(["bun", "install"], { cwd: p.root, env, timeoutMs: 180000 });
-    if (i2.code !== 0) {
-      ctx.out.err(`bun install did not finish (${i2.timedOut ? "timed out" : "exit " + i2.code}). package.json is updated; run \`bun install\` and commit bun.lock.`);
-      return 1;
-    }
-    ctx.out.log("bun.lock updated: commit it with package.json.");
-  } else
-    ctx.out.log("Run `bun install` and commit bun.lock (the lockfile pins the integrity the build checks).");
-  return 0;
-}
-
-// src/commands/validate.ts
-import { readFileSync as readFileSync15 } from "fs";
-var validateFlags = {};
-async function runValidate(a, ctx) {
-  const p = loadProject(a.positionals[0] ?? ctx.cwd);
-  for (const w of p.warnings)
-    ctx.out.log(`  [warning] ${w.path || "(root)"}: ${w.message} (${w.code})`);
-  for (const l of await sdkAdvisories(p.root, ctx))
-    ctx.out.log(l);
-  const c = validateSourceTree(p.root, p.manifest, ctx);
-  printSourceCheck(c, ctx);
-  let ok = c.ok;
-  if (p.manifest.features.pads?.controller) {
-    if (p.manifest.build.template === "static") {
-      const out = new Map(outputFiles(p.root, p.manifest).map((f) => [f.path, new Uint8Array(readFileSync15(f.abs))]));
-      const ctl = await checkController(out, p.manifest, ctx);
-      ok &&= ctl?.ok ?? true;
-    } else
-      ctx.out.log(`  custom controller ${p.manifest.features.pads.controller}: checked after the build by \`osg check\``);
-  }
-  ctx.out.log(ok ? `OK: ${p.manifest.slug} passes source validation (${c.fileCount} files).` : `FAILED: ${p.manifest.slug} has problems above. The server runs the same checks.`);
-  return ok ? 0 : 1;
-}
-
-// src/context.ts
-import { homedir as homedir3 } from "os";
+// src/lockfile.ts
+import { readFileSync as readFileSync12 } from "fs";
+import { join as join19 } from "path";
 
 // ../validate/src/crc32.ts
 var TABLE = (() => {
@@ -33002,6 +31948,9 @@ var SDK_PACKAGE_NAME = "@osg/sdk";
 var SDK_INTEGRITY = /^sha512-[A-Za-z0-9+/]{86}==$/;
 var REGISTRY_HOST = "registry.npmjs.org";
 var REGISTRY_ORIGIN = `https://${REGISTRY_HOST}`;
+var BUILDER_BUN_VERSION = "1.3.14";
+var BUILDER_BUN_LOCKFILE_VERSION = 1;
+var BUN_LOCKFILE_TOO_NEW = (v) => `bun.lock is lockfileVersion ${v}, written by a newer Bun than the build server's Bun ${BUILDER_BUN_VERSION}, which reads up to version ${BUILDER_BUN_LOCKFILE_VERSION}. Rewrite it with \`bunx bun@${BUILDER_BUN_VERSION} install --lockfile-only\` (same packages, older format) and commit it`;
 function parseJsonc(text) {
   let out = "";
   let i2 = 0;
@@ -33132,6 +32081,9 @@ function fromBunLock(raw) {
   }
   if (!lock || typeof lock !== "object")
     return { info: null, issues: [{ code: "lockfile_invalid", path: "bun.lock", message: "bun.lock must be an object" }] };
+  const v = lock.lockfileVersion;
+  if (typeof v === "number" && v > BUILDER_BUN_LOCKFILE_VERSION)
+    return { info: null, issues: [{ code: "lockfile_invalid", path: "bun.lock", message: BUN_LOCKFILE_TOO_NEW(v) }] };
   const ws = lock.workspaces;
   if (ws && typeof ws === "object" && Object.keys(ws).some((k) => k !== ""))
     issues.push({ code: "workspaces", path: "bun.lock", message: "workspaces are not supported: submit a single package root" });
@@ -35789,18 +34741,1100 @@ async function scanControllerBundle(entry, output2, o = {}) {
   const sorted = [...files].sort();
   return { ok: !findings.some((f) => f.severity === "block"), findings: findings.slice(0, 60), entry, files: sorted, own: sorted.filter((p) => isControllerOwnPath(entry, p)), bytes };
 }
+// src/lockfile.ts
+function bunLockVersion(root) {
+  try {
+    const v = parseJsonc(readFileSync12(join19(root, "bun.lock"), "utf8")).lockfileVersion;
+    return typeof v === "number" ? v : null;
+  } catch {
+    return null;
+  }
+}
+async function fitLockfileToBuilder(ctx, root, env) {
+  const v = bunLockVersion(root);
+  if (v === null || v <= BUILDER_BUN_LOCKFILE_VERSION)
+    return true;
+  ctx.out.log(`bun.lock is lockfileVersion ${v}; rewriting it with Bun ${BUILDER_BUN_VERSION}, the version the build server runs...`);
+  const r2 = await ctx.runner.run(["bunx", `bun@${BUILDER_BUN_VERSION}`, "install", "--lockfile-only"], { cwd: root, env, timeoutMs: 180000 });
+  if (r2.code === 0 && (bunLockVersion(root) ?? 0) <= BUILDER_BUN_LOCKFILE_VERSION)
+    return true;
+  ctx.out.err(`could not rewrite bun.lock (${r2.timedOut ? "timed out" : "exit " + r2.code}). Run \`bunx bun@${BUILDER_BUN_VERSION} install --lockfile-only\` in ${root} and commit bun.lock: the server cannot build lockfileVersion ${v}.`);
+  return false;
+}
+
+// src/starter.ts
+import { existsSync as existsSync13, readdirSync as readdirSync5, readFileSync as readFileSync13 } from "fs";
+import { dirname as dirname10, join as join20 } from "path";
+function escapeFor(path, s) {
+  if (/\.html?$/.test(path))
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  if (/\.(json|ts|js)$/.test(path))
+    return JSON.stringify(s).slice(1, -1).replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+  return s;
+}
+var MANIFEST = (slug, name) => JSON.stringify({
+  manifestVersion: 1,
+  slug,
+  name,
+  tagline: "Tap, collect, climb the board.",
+  build: { template: "vite" },
+  input: { modes: ["keyboard", "mouse", "touch"], primary: "mouse", controls: "Click or tap, Space" },
+  players: { min: 1, max: 4 },
+  features: {
+    save: { enabled: true },
+    leaderboards: [{ id: "main", title: "Taps in 10 s", sort: "desc", unit: "count", min: 0, max: 400, maxPerSecond: 20, minDurationMs: 5000, periods: ["all", "day", "week"], show: { top: 10, around: 2 } }],
+    achievements: [{ id: "first-tap", name: "First tap", description: "Tap once.", points: 5 }, { id: "tapper", name: "Tapper", description: "Tap 100 times in total.", stat: "taps", target: 100, points: 20 }],
+    stats: [{ id: "taps", kind: "sum" }]
+  }
+}, null, 2) + `
+`;
+var INDEX_HTML = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{name}}</title>
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <main>
+    <h1>{{name}}</h1>
+    <p id="status">Loading...</p>
+    <button id="tap" type="button" disabled>Tap!</button>
+    <p>Taps: <b id="count">0</b> &middot; Best: <b id="best">0</b> &middot; <span id="timer">10.0</span> s</p>
+  </main>
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
+`;
+var MAIN_TS = `// A hello-world OSG game. \`osg\` talks to the platform inside the shell and to a local fallback everywhere else, so this same build runs
+// in \`osg dev\`, on oursilly.games and standalone. Everything must come from your own files: games have no network access.
+import { osg } from "@osg/sdk";
+
+const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
+const status = $("status"), tap = $<HTMLButtonElement>("tap"), count = $("count"), best = $("best"), timer = $("timer");
+
+let taps = 0;
+let run: Awaited<ReturnType<typeof osg.leaderboards.start>> | null = null;
+let startedAt = 0;
+let bestScore = 0;
+
+async function main(): Promise<void> {
+  const info = await osg.ready();
+  status.textContent = \`Hello \${info.player.name}!\`;
+  osg.lifecycle.loaded();
+  if (osg.can("save")) {
+    const saved = await osg.save.get("best");
+    bestScore = Number((saved?.value as { best?: number } | null)?.best ?? 0);
+    best.textContent = String(bestScore);
+  }
+  tap.disabled = false;
+}
+
+async function begin(): Promise<void> {
+  taps = 0; count.textContent = "0";
+  startedAt = performance.now();
+  if (osg.can("boards")) run = await osg.leaderboards.start("main").catch(() => null);
+  const tick = (): void => {
+    const left = 10 - (performance.now() - startedAt) / 1000;
+    if (left <= 0) { timer.textContent = "0.0"; void finish(); return; }
+    timer.textContent = left.toFixed(1);
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+async function finish(): Promise<void> {
+  const score = taps;
+  startedAt = 0;
+  status.textContent = \`Time! \${score} taps.\`;
+  if (score > bestScore) {
+    bestScore = score; best.textContent = String(score);
+    if (osg.can("save")) await osg.save.set("best", { best: score }).catch(() => undefined);
+  }
+  if (run && osg.can("boards")) await osg.leaderboards.submit(run, score, { durationMs: 10_000 }).catch(() => undefined);
+  run = null;
+}
+
+tap.addEventListener("click", () => {
+  if (!startedAt) { void begin(); }
+  taps++; count.textContent = String(taps);
+  if (taps === 1) void osg.achievements.unlock("first-tap").catch(() => undefined);
+  osg.stats.inc("taps");
+});
+
+void main().catch((e) => { status.textContent = String(e?.message ?? e); });
+`;
+var STYLE_CSS = `:root { color-scheme: dark; --bg: #11161b; --fg: #e8eef3; --accent: #3dd6c6; --warn: #f2a93b; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--fg); font: 18px/1.4 system-ui, sans-serif; }
+main { text-align: center; padding: 24px; }
+h1 { margin: 0 0 8px; font-size: 2rem; letter-spacing: .02em; }
+button { font: inherit; padding: 14px 28px; border-radius: 12px; border: 2px solid var(--accent); background: transparent; color: var(--fg); cursor: pointer; }
+button:hover:not(:disabled) { background: var(--accent); color: #06201d; }
+button:disabled { opacity: .5; cursor: default; }
+#tap { font-size: 1.6rem; min-width: 180px; min-height: 88px; }
+`;
+var GITIGNORE = `node_modules/
+dist/
+.osg/
+.env*
+*.pem
+*.key
+.DS_Store
+`;
+var CLAUDE_MD = `# {{name}}
+
+This is an Our Silly Games project (\`osg.json\`). Use the \`osg\` plugin skills before writing code: start with \`/osg:osg-start\`.
+
+- \`osg dev\` runs the whole platform locally (multiplayer, boards, saves, NPCs) at http://localhost:4777
+- \`osg check\` runs the same validation and rules as the server, then a headless run
+- \`osg submit\` uploads the source (the server builds, reviews and publishes it, then emails the author)
+- Games have **no network access**: vendor fonts and libraries, no CDN links, no analytics
+- No copyrighted names, art or music; no rude words or imagery
+`;
+var AGENTS_MD = `# {{name}}
+
+This is an Our Silly Games browser game (\`osg.json\`). Use the installed Our Silly Games skills to design, build, preview and publish it.
+The starter is a placeholder: replace its look, feel and rules with the author's idea.
+
+- Start with the \`osg-design\` skill and write \`DESIGN.md\`: the hook, core loop, visual direction and screenshot moment.
+- Use Bun 1.3+, run \`bun install\` and keep \`bun.lock\`: the server needs it to build. The server runs Bun ${BUILDER_BUN_VERSION}; if \`osg check\` says bun.lock is too new, run \`bunx bun@${BUILDER_BUN_VERSION} install --lockfile-only\` and commit it.
+- \`osg dev\` runs the platform locally at ${SHELL_ORIGINS.dev}, including multiplayer, boards, saves and NPCs.
+- Use \`osg check\` and \`osg shot\` to test the game and inspect it at phone and desktop sizes.
+- Games have **no network access**. Keep fonts, libraries and assets in the project; use \`@osg/sdk\` for platform features.
+- Declare platform features in \`osg.json\`, bound leaderboards and always supply an NPC fallback.
+- Do not include copyrighted names, art or music, rude content, secrets or tokens.
+- Publish only when the author asks. \`osg login\` opens a browser for account consent; \`osg submit\` uploads the source for review and \`osg status\` follows progress.
+- Never read or print the CLI credential file or paste tokens into chat. MCP sign-in and CLI sign-in are separate; let each client manage its own credentials.
+`;
+var PACKAGE_JSON = (slug) => JSON.stringify({
+  name: slug,
+  version: "0.1.0",
+  private: true,
+  type: "module",
+  scripts: { dev: "osg dev", check: "osg check", build: "vite build", submit: "osg submit" },
+  dependencies: { [SDK_PACKAGE]: sdkTarballUrl(SDK_VERSION) },
+  devDependencies: { vite: "^7.0.0", typescript: "^5.6.0" }
+}, null, 2) + `
+`;
+var VITE_CONFIG = `import { defineConfig } from "vite";
+
+// base "./" makes every asset URL relative: the game is served from its own host on the platform and from /__game/<id>/ in \`osg dev\` path mode.
+export default defineConfig({ base: "./", build: { target: "es2022", assetsInlineLimit: 0 } });
+`;
+var TSCONFIG = JSON.stringify({ compilerOptions: { target: "ES2022", module: "ESNext", moduleResolution: "bundler", strict: true, noEmit: true, lib: ["ES2022", "DOM"], skipLibCheck: true }, include: ["src"] }, null, 2) + `
+`;
+var CLAUDE_SETTINGS = JSON.stringify({
+  extraKnownMarketplaces: { [PLUGIN.name]: { source: { source: "github", repo: PLUGIN.githubRepo } } },
+  enabledPlugins: { [`${PLUGIN.name}@${PLUGIN.name}`]: true }
+}, null, 2) + `
+`;
+function embeddedStarter(slug, name) {
+  const files = new Map;
+  files.set("osg.json", MANIFEST(slug, name));
+  files.set("package.json", PACKAGE_JSON(slug));
+  files.set("vite.config.ts", VITE_CONFIG);
+  files.set("tsconfig.json", TSCONFIG);
+  files.set("index.html", INDEX_HTML.replaceAll("{{name}}", escapeFor("index.html", name)));
+  files.set("src/main.ts", MAIN_TS);
+  files.set("src/style.css", STYLE_CSS);
+  files.set(".gitignore", GITIGNORE);
+  files.set("CLAUDE.md", CLAUDE_MD.replaceAll("{{name}}", name));
+  files.set("AGENTS.md", AGENTS_MD.replaceAll("{{name}}", name));
+  files.set(".claude/settings.json", CLAUDE_SETTINGS);
+  return files;
+}
+function readDir(dir) {
+  const files = new Map;
+  const walk = (rel) => {
+    for (const e of readdirSync5(rel ? join20(dir, rel) : dir, { withFileTypes: true })) {
+      const r2 = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        if (e.name !== "node_modules" && e.name !== ".git")
+          walk(r2);
+      } else if (e.isFile())
+        files.set(r2, new Uint8Array(readFileSync13(join20(dir, r2))));
+    }
+  };
+  walk("");
+  return files;
+}
+function pluginStarterCandidates(here = dirname10(new URL(import.meta.url).pathname)) {
+  return [join20(here, "..", "templates", "starter"), join20(here, "..", "..", "..", "plugin", "templates", "starter")];
+}
+function loadStarter(slug, name, candidates = pluginStarterCandidates()) {
+  for (const c of candidates) {
+    if (!existsSync13(join20(c, "osg.json")))
+      continue;
+    const files = readDir(c);
+    const td4 = new TextDecoder, te6 = new TextEncoder;
+    let tplSlug = "", tplName = "";
+    try {
+      const j = JSON.parse(td4.decode(files.get("osg.json")));
+      tplSlug = j.slug ?? "";
+      tplName = j.name ?? "";
+    } catch {}
+    for (const [p, v] of files) {
+      if (typeof v === "string" || !(/\.(json|md|ts|js|html|css|txt)$/.test(p) || p === ".gitignore"))
+        continue;
+      const nm = escapeFor(p, name), sl = escapeFor(p, slug);
+      let text = td4.decode(v).replaceAll("{{slug}}", sl).replaceAll("{{name}}", nm);
+      if (tplName.length >= 3)
+        text = text.replaceAll(tplName, nm);
+      if (tplSlug.length >= 3)
+        text = text.replaceAll(tplSlug, sl);
+      files.set(p, te6.encode(text));
+    }
+    const m = files.get("osg.json");
+    if (m) {
+      try {
+        const j = JSON.parse(td4.decode(m));
+        j.slug = slug;
+        j.name = name;
+        files.set("osg.json", te6.encode(JSON.stringify(j, null, 2) + `
+`));
+      } catch {}
+    }
+    if (!files.has("AGENTS.md"))
+      files.set("AGENTS.md", AGENTS_MD.replaceAll("{{name}}", name));
+    return { files, source: "plugin" };
+  }
+  return { files: embeddedStarter(slug, name), source: "embedded" };
+}
+
+// src/commands/init.ts
+var initFlags = {
+  slug: { type: "string", description: "game slug (lowercase letters, digits, dashes; default: from the folder name)" },
+  name: { type: "string", description: "game title (default: from the slug)" },
+  force: { type: "boolean", description: "overwrite files that already exist" },
+  install: { type: "boolean", default: true, description: "run `bun install` afterwards (--no-install to skip)" }
+};
+function slugFromName(s) {
+  const slug = s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40).replace(/-+$/, "");
+  return slug.length >= 3 ? slug : `${slug || "game"}-game`.slice(0, 40);
+}
+var titleCase = (slug) => slug.split("-").filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+async function runInit(a, ctx) {
+  const dir = resolve6(ctx.cwd, a.positionals[0] ?? ".");
+  const slug = a.flags.slug ?? slugFromName(basename(dir));
+  const v = validateSlug(slug);
+  if (!v.ok)
+    throw new CliError(`"${slug}" is not a usable slug (${v.reason === "reserved" ? "it is reserved" : "use 3-40 lowercase letters, digits and single dashes"})`, 2, "pass --slug <name>");
+  const name = a.flags.name ?? titleCase(slug);
+  if (name.length < 2 || name.length > 40)
+    throw new CliError("--name must be 2-40 characters", 2);
+  const { files, source } = loadStarter(slug, name, ctx.starterCandidates);
+  const sdk = await resolveSdk(ctx, { fallback: true });
+  if (sdk.note)
+    ctx.out.err(`note: ${sdk.note}`);
+  const pj = files.get("package.json");
+  if (pj !== undefined)
+    files.set("package.json", readPackageText(typeof pj === "string" ? pj : new TextDecoder().decode(pj), sdk.url));
+  const force = !!a.flags.force;
+  const conflicts = [...files.keys()].filter((p) => existsSync14(join21(dir, p)));
+  if (conflicts.length && !force)
+    throw new CliError(`these files already exist:
+${conflicts.slice(0, 10).map((c) => "  " + c).join(`
+`)}`, 2, "run in an empty folder, or pass --force to overwrite");
+  mkdirSync12(dir, { recursive: true });
+  for (const [p, content] of files) {
+    const target = join21(dir, p);
+    mkdirSync12(dirname11(target), { recursive: true });
+    writeFileSync8(target, content);
+  }
+  ctx.out.log(`Created ${files.size} files in ${dir} (${source === "plugin" ? "plugin starter" : "built-in starter"}).`);
+  const project = loadProject(dir);
+  ctx.out.log(`@osg/sdk ${sdk.version} from ${sdk.url}${sdk.source === "latest" ? " (tarball verified)" : " (pinned fallback, not verified)"}.`);
+  ctx.out.log(`osg.json is valid: ${project.manifest.name} (${project.manifest.slug}, template ${project.manifest.build.template}).`);
+  if (a.flags.install && existsSync14(join21(dir, "package.json"))) {
+    ctx.out.log("Installing dependencies with bun...");
+    const env = Object.fromEntries(Object.entries(ctx.env).filter(([, v2]) => v2 !== undefined));
+    const r2 = await ctx.runner.run(["bun", "install"], { cwd: dir, env, timeoutMs: 180000 });
+    if (r2.code !== 0) {
+      ctx.out.err(`bun install did not finish (${r2.timedOut ? "timed out" : "exit " + r2.code}). Run it later in ${dir}; \`osg check\` and \`osg submit\` need the lockfile it writes.`);
+    } else if (await fitLockfileToBuilder(ctx, dir, env))
+      ctx.out.log("Dependencies installed (bun.lock written: commit it).");
+  }
+  ctx.out.log("");
+  ctx.out.log("Next:");
+  ctx.out.log("  osg dev      run the whole platform locally (http://localhost:4777)");
+  ctx.out.log("  osg check    validate, build and play-test headlessly");
+  ctx.out.log("  osg submit   upload the source for review");
+  return 0;
+}
+
+// src/credentials.ts
+import { chmodSync as chmodSync4, existsSync as existsSync15, mkdirSync as mkdirSync13, readFileSync as readFileSync14, renameSync as renameSync3, rmSync as rmSync10, statSync as statSync6, writeFileSync as writeFileSync9 } from "fs";
+import { join as join22 } from "path";
+var Credentials = exports_external.strictObject({
+  v: exports_external.literal(1),
+  issuer: exports_external.string(),
+  clientId: exports_external.string(),
+  accessToken: exports_external.string().min(1),
+  refreshToken: exports_external.string().min(1).optional(),
+  expiresAt: exports_external.number().int(),
+  scope: exports_external.string().optional(),
+  email: exports_external.string().optional()
+});
+var FILE = "credentials.json";
+function credentialsPath(dir) {
+  return join22(dir, FILE);
+}
+function saveCredentials(dir, c) {
+  mkdirSync13(dir, { recursive: true, mode: 448 });
+  try {
+    chmodSync4(dir, 448);
+  } catch {}
+  const tmp = join22(dir, `.${FILE}.${process.pid}.tmp`);
+  writeFileSync9(tmp, JSON.stringify(Credentials.parse(c), null, 2) + `
+`, { mode: 384 });
+  try {
+    chmodSync4(tmp, 384);
+  } catch {}
+  renameSync3(tmp, credentialsPath(dir));
+}
+function loadCredentials(dir) {
+  const p = credentialsPath(dir);
+  if (!existsSync15(p))
+    return null;
+  try {
+    if ((statSync6(p).mode & 63) !== 0)
+      chmodSync4(p, 384);
+    return Credentials.parse(JSON.parse(readFileSync14(p, "utf8")));
+  } catch {
+    return null;
+  }
+}
+function clearCredentials(dir) {
+  const p = credentialsPath(dir);
+  if (!existsSync15(p))
+    return false;
+  rmSync10(p, { force: true });
+  return true;
+}
+
+// src/config.ts
+import { homedir } from "os";
+import { join as join23 } from "path";
+function assertSecureUrl(key2, value) {
+  let u;
+  try {
+    u = new URL(value);
+  } catch {
+    throw new CliError(`OSG_ENDPOINTS.${key2} is not a URL`, 2);
+  }
+  const loopback = u.hostname === "localhost" || u.hostname === "127.0.0.1" || u.hostname === "[::1]";
+  if (u.protocol !== "https:" && !(u.protocol === "http:" && loopback))
+    throw new CliError(`OSG_ENDPOINTS.${key2} must be https (plain http is only allowed for localhost)`, 2, "your sign-in token would otherwise cross the network unencrypted");
+}
+function endpoints(env = process.env) {
+  const base = { site: `https://${HOSTS.site}`, mcp: `https://${HOSTS.mcp}${PATHS.mcp}`, api: `https://${HOSTS.api}` };
+  const o = env.OSG_ENDPOINTS;
+  if (!o)
+    return base;
+  try {
+    const j = JSON.parse(o);
+    const e = { site: j.site ?? base.site, mcp: j.mcp ?? base.mcp, api: j.api ?? base.api };
+    for (const [k, v] of Object.entries(e))
+      assertSecureUrl(k, v);
+    return e;
+  } catch (err3) {
+    if (err3 instanceof CliError)
+      throw err3;
+    return base;
+  }
+}
+function configDir(env = process.env, home = homedir()) {
+  if (env.OSG_CONFIG_DIR)
+    return env.OSG_CONFIG_DIR;
+  if (env.XDG_CONFIG_HOME)
+    return join23(env.XDG_CONFIG_HOME, "osg");
+  return join23(home, ".config", "osg");
+}
+
+// src/oauth.ts
+var CLI_CLIENT_ID = OSG_CLI_CLIENT_ID;
+async function getJson(f, url2, what) {
+  let res;
+  try {
+    res = await f(url2, { headers: { accept: "application/json" }, redirect: "error", signal: AbortSignal.timeout(1e4) });
+  } catch (e) {
+    throw new CliError(`could not reach ${what} (${sanitize(e.message, 120)})`, 1, "check your network connection");
+  }
+  if (!res.ok)
+    throw new CliError(`${what} answered HTTP ${res.status}`);
+  try {
+    return await res.json();
+  } catch {
+    throw new CliError(`${what} did not return JSON`);
+  }
+}
+var sameOrigin = (a, b) => {
+  try {
+    return new URL(a).origin === new URL(b).origin;
+  } catch {
+    return false;
+  }
+};
+async function discover(ep, f = fetch) {
+  const mcpOrigin = new URL(ep.mcp).origin;
+  const prm = await getJson(f, `${mcpOrigin}/.well-known/oauth-protected-resource`, "the MCP resource metadata");
+  const servers = prm.authorization_servers;
+  const issuer = Array.isArray(servers) && typeof servers[0] === "string" ? servers[0] : ep.site;
+  if (!sameOrigin(issuer, ep.site))
+    throw new CliError(`the MCP server names an unexpected authorization server (${sanitize(issuer, 80)})`, 1, "refusing to continue");
+  const md = await getJson(f, `${new URL(issuer).origin}/.well-known/oauth-authorization-server`, "the authorization server metadata");
+  const m = md;
+  if (typeof m.issuer !== "string" || !sameOrigin(m.issuer, ep.site))
+    throw new CliError("authorization server metadata has the wrong issuer", 1, "refusing to continue");
+  for (const k of ["authorization_endpoint", "token_endpoint"]) {
+    if (typeof m[k] !== "string" || !sameOrigin(m[k], ep.site))
+      throw new CliError(`authorization server metadata has an unexpected ${k}`, 1, "refusing to continue");
+  }
+  return { issuer: m.issuer, authorization_endpoint: m.authorization_endpoint, token_endpoint: m.token_endpoint };
+}
+function pkce() {
+  const v = new Uint8Array(32);
+  crypto.getRandomValues(v);
+  const verifier = b64u.enc(v);
+  return { verifier, challenge: crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)).then((d) => b64u.enc(new Uint8Array(d))) };
+}
+var randomState = () => {
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  return b64u.enc(b);
+};
+async function login(o) {
+  const f = o.fetch ?? fetch;
+  const now = o.now ?? Date.now;
+  const as = await discover(o.endpoints, f);
+  const { verifier, challenge } = pkce();
+  const state = randomState();
+  let timeoutId;
+  let resolveCb;
+  const cb = new Promise((r2) => {
+    resolveCb = r2;
+  });
+  let served = false;
+  const server = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    fetch(req) {
+      const u = new URL(req.url);
+      if (u.pathname !== "/callback" || req.method !== "GET")
+        return new Response("not found", { status: 404 });
+      if (served)
+        return new Response("this login link was already used", { status: 410 });
+      served = true;
+      resolveCb(u.searchParams);
+      return new Response("<!doctype html><meta charset=utf-8><title>osg</title><p>You can close this tab and go back to the terminal.</p>", { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer" } });
+    }
+  });
+  try {
+    const redirectUri = `http://127.0.0.1:${server.port}/callback`;
+    const url2 = new URL(as.authorization_endpoint);
+    for (const [k, v] of Object.entries({
+      response_type: "code",
+      client_id: CLI_CLIENT_ID,
+      redirect_uri: redirectUri,
+      state,
+      code_challenge: await challenge,
+      code_challenge_method: "S256",
+      scope: MCP_SCOPES.join(" "),
+      resource: o.endpoints.mcp
+    }))
+      url2.searchParams.set(k, v);
+    o.print("Opening your browser to sign in to Our Silly Games. If it does not open, visit:");
+    o.print(url2.href);
+    await Promise.resolve(o.openUrl(url2.href)).catch(() => false);
+    const timeout = new Promise((_, rej) => {
+      timeoutId = setTimeout(() => rej(new CliError("timed out waiting for the browser (5 minutes)", 1, "run `osg login` again")), o.timeoutMs ?? 300000);
+    });
+    const q = await Promise.race([cb, timeout]);
+    if (q.get("error"))
+      throw new CliError(`sign-in was refused: ${sanitize(q.get("error_description") ?? q.get("error"), 160)}`);
+    if (q.get("state") !== state)
+      throw new CliError("the sign-in response did not match this request (state mismatch)", 1, "run `osg login` again");
+    const iss = q.get("iss");
+    if (iss !== null && iss !== as.issuer)
+      throw new CliError("the sign-in response came from an unexpected issuer", 1, "refusing to continue");
+    const code = q.get("code");
+    if (!code)
+      throw new CliError("the sign-in response had no code");
+    const tok = await tokenRequest(f, as.token_endpoint, { grant_type: "authorization_code", code, redirect_uri: redirectUri, client_id: CLI_CLIENT_ID, code_verifier: verifier, resource: o.endpoints.mcp });
+    const creds = toCredentials(tok, as.issuer, now());
+    saveCredentials(o.configDir, creds);
+    return creds;
+  } finally {
+    clearTimeout(timeoutId);
+    await server.stop(true);
+  }
+}
+async function tokenRequest(f, endpoint, params) {
+  let res;
+  try {
+    res = await f(endpoint, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" }, body: new URLSearchParams(params), redirect: "error", signal: AbortSignal.timeout(15000) });
+  } catch (e) {
+    throw new CliError(`could not reach the token endpoint (${sanitize(e.message, 120)})`);
+  }
+  const text = await res.text();
+  let json3 = {};
+  try {
+    json3 = JSON.parse(text);
+  } catch {}
+  if (!res.ok)
+    throw new CliError(`token request failed: ${sanitize(json3.error_description ?? json3.error ?? `HTTP ${res.status}`, 160)}`);
+  return json3;
+}
+function toCredentials(t2, issuer, nowMs, clientId = CLI_CLIENT_ID) {
+  if (typeof t2.access_token !== "string" || !t2.access_token)
+    throw new CliError("the token response had no access token");
+  const expiresIn = typeof t2.expires_in === "number" ? t2.expires_in : 3600;
+  return {
+    v: 1,
+    issuer,
+    clientId,
+    accessToken: t2.access_token,
+    ...typeof t2.refresh_token === "string" ? { refreshToken: t2.refresh_token } : {},
+    expiresAt: nowMs + expiresIn * 1000,
+    ...typeof t2.scope === "string" ? { scope: t2.scope } : {}
+  };
+}
+async function accessToken(o) {
+  const env = o.env ?? process.env;
+  if (env.OSG_TOKEN)
+    return env.OSG_TOKEN;
+  const now = (o.now ?? Date.now)();
+  const c = loadCredentials(o.configDir);
+  if (!c)
+    throw new CliError("you are not signed in", 1, "run `osg login`");
+  if (!sameOrigin(c.issuer, o.endpoints.site))
+    throw new CliError("stored credentials belong to another server", 1, "run `osg login` again");
+  if (c.expiresAt - now > (o.skewMs ?? 60000))
+    return c.accessToken;
+  if (!c.refreshToken)
+    throw new CliError("your sign-in has expired", 1, "run `osg login`");
+  const as = await discover(o.endpoints, o.fetch ?? fetch);
+  if (as.issuer !== c.issuer)
+    throw new CliError("stored credentials belong to another server", 1, "run `osg login` again");
+  const tok = await tokenRequest(o.fetch ?? fetch, as.token_endpoint, { grant_type: "refresh_token", refresh_token: c.refreshToken, client_id: c.clientId, resource: o.endpoints.mcp });
+  const next = toCredentials(tok, as.issuer, now, c.clientId);
+  if (!next.refreshToken)
+    next.refreshToken = c.refreshToken;
+  saveCredentials(o.configDir, next);
+  return next.accessToken;
+}
+
+// src/commands/auth.ts
+var loginFlags = { "no-browser": { type: "boolean", description: "do not open a browser; print the link only" } };
+async function runLogin(a, ctx) {
+  const dir = configDir(ctx.env, ctx.home);
+  await login({
+    endpoints: ctx.endpoints,
+    configDir: dir,
+    fetch: ctx.fetch,
+    print: (l) => ctx.out.log(l),
+    openUrl: (u) => a.flags["no-browser"] ? false : ctx.openUrl(u),
+    now: ctx.now
+  });
+  ctx.out.log("Signed in. The token is stored in " + dir + " (readable only by you).");
+  return 0;
+}
+async function runLogout(_a4, ctx) {
+  const dir = configDir(ctx.env, ctx.home);
+  const had = !!loadCredentials(dir);
+  clearCredentials(dir);
+  ctx.out.log(had ? "Signed out: the stored token was deleted. (It stays valid on the server until it expires; sign out of oursilly.games to revoke sessions.)" : "You were not signed in.");
+  return 0;
+}
+
+// src/commands/pack.ts
+var packFlags = { out: { type: "string", alias: "o", description: "where to write the zip (default .osg/source.zip)" }, list: { type: "boolean", description: "print every file that goes into the archive" } };
+async function runPack(a, ctx) {
+  const p = loadProject(a.positionals[0] ?? ctx.cwd);
+  if (a.flags.list) {
+    for (const f of planPack(p.root, p.manifest).files)
+      ctx.out.log(sanitize(f.path, 220));
+  }
+  const r2 = await packProject(p.root, p.manifest, a.flags.out);
+  ctx.out.log(`${r2.path}`);
+  ctx.out.log(`${r2.files} files, ${(r2.unpackedBytes / 1024).toFixed(0)} KiB unpacked, ${(r2.bytes / 1024).toFixed(0)} KiB zipped`);
+  ctx.out.log(`sha256 ${r2.sha256}`);
+  if (r2.skippedSecrets.length)
+    ctx.out.err(`left out ${r2.skippedSecrets.length} file(s) that look like secrets: ${r2.skippedSecrets.slice(0, 5).map((s) => sanitize(s, 60)).join(", ")}`);
+  return 0;
+}
+
+// src/commands/shot.ts
+import { join as join24 } from "path";
+import { mkdirSync as mkdirSync14, mkdtempSync as mkdtempSync3, rmSync as rmSync11, writeFileSync as writeFileSync10 } from "fs";
+import { tmpdir as tmpdir3 } from "os";
+var shotFlags = {
+  out: { type: "string", alias: "o", description: "directory for the screenshots (default .osg/shots)" },
+  count: { type: "number", default: 3, description: "how many screenshots" },
+  interval: { type: "number", default: 3, description: "seconds between screenshots (the monkey plays in between)" },
+  width: { type: "number", default: 1280, description: "viewport width" },
+  height: { type: "number", default: 720, description: "viewport height" },
+  seed: { type: "number", default: 1, description: "monkey seed" },
+  "no-build": { type: "boolean", description: "do not (re)build before the shots" }
+};
+async function runShot(a, ctx) {
+  const p = loadProject(a.positionals[0] ?? ctx.cwd);
+  if (!a.flags["no-build"] && p.manifest.build.template !== "static") {
+    const b = await buildProject(p.root, p.manifest, { runner: ctx.runner, env: ctx.env, log: (s) => ctx.out.err(s) });
+    if (!b.ok)
+      throw new CliError(`the build failed: ${sanitize(b.issues[0] ?? "see `osg build`", 200)}`, 1, "run `osg build` to see the log");
+  }
+  const outDir = a.flags.out ?? join24(p.root, ".osg", "shots");
+  mkdirSync14(outDir, { recursive: true });
+  const dataDir = mkdtempSync3(join24(tmpdir3(), "osg-shot-"));
+  const session = await ctx.browser.launch(p.root, ctx.env);
+  const server = await ctx.startDev({ projectDir: p.root, port: 0, dataDir, seedBoards: true, log: () => {
+    return;
+  } });
+  const files = [];
+  try {
+    const context = await session.browser.newContext({ viewport: { width: a.flags.width, height: a.flags.height } });
+    const page2 = await context.newPage();
+    await page2.goto(`${server.url}/?as=shot`, { waitUntil: "domcontentloaded" });
+    await page2.waitForFunction(() => window.__osgDev?.state().launched === true, null, { timeout: 30000 });
+    await page2.waitForSelector("#stage iframe", { timeout: 15000 });
+    const rng = mulberry32(a.flags.seed);
+    const frame = page2.locator("#stage iframe").first();
+    const n = Math.max(1, Math.min(20, a.flags.count));
+    for (let i2 = 1;i2 <= n; i2++) {
+      await page2.waitForTimeout(1200);
+      const box = await frame.boundingBox();
+      if (box && i2 > 1)
+        await runMonkey(page2, box, Math.max(0, a.flags.interval * 1000 - 1200), rng);
+      const b2 = await frame.boundingBox() ?? box;
+      const buf = b2 ? await page2.screenshot({ clip: b2 }) : await page2.screenshot();
+      const file2 = join24(outDir, `shot-${i2}.png`);
+      writeFileSync10(file2, buf);
+      files.push(file2);
+    }
+    await context.close();
+  } finally {
+    await session.close();
+    await server.close();
+    rmSync11(dataDir, { recursive: true, force: true });
+  }
+  for (const f of files)
+    ctx.out.log(f);
+  return 0;
+}
+
+// src/mcp.ts
+var PROTOCOL = "2025-06-18";
+
+class McpClient {
+  o;
+  session = null;
+  initialised = false;
+  nextId = 1;
+  f;
+  constructor(o) {
+    this.o = o;
+    this.f = o.fetch ?? fetch;
+  }
+  async post(body, token, expectResponse) {
+    const headers2 = {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+      authorization: `Bearer ${token}`,
+      "mcp-protocol-version": PROTOCOL,
+      [HEADERS.client]: `cli/${this.o.version}`
+    };
+    if (this.session)
+      headers2["mcp-session-id"] = this.session;
+    let res;
+    try {
+      res = await this.f(this.o.url, { method: "POST", headers: headers2, body: JSON.stringify(body), redirect: "error", signal: AbortSignal.timeout(this.o.timeoutMs ?? 60000) });
+    } catch (e) {
+      throw new CliError(`could not reach the OSG server (${sanitize(e.message, 120)})`, 1, "check your network connection and try again");
+    }
+    const sid = res.headers.get("mcp-session-id");
+    if (sid)
+      this.session = sid;
+    if (res.status === 401)
+      throw new CliError("the server did not accept your sign-in", 1, "run `osg login`");
+    if (res.status === 403) {
+      const t2 = sanitize(await res.text(), 200);
+      throw new CliError(/insufficient_scope/.test(t2) ? "your sign-in does not allow this (missing scope)" : "the server refused this request", 1, "run `osg login` again and accept all permissions");
+    }
+    if (res.status === 429)
+      throw new CliError("too many requests, slow down", 1, "wait a minute and try again");
+    if (!expectResponse)
+      return res.ok || res.status === 202 ? res : (() => {
+        throw new CliError(`the server answered HTTP ${res.status}`);
+      })();
+    if (!res.ok)
+      throw new CliError(`the server answered HTTP ${res.status}`);
+    return res;
+  }
+  async rpc(method, params, token) {
+    const id3 = this.nextId++;
+    const res = await this.post({ jsonrpc: "2.0", id: id3, method, params }, token, true);
+    const msg2 = await readRpc(res, id3);
+    if (msg2.error)
+      throw new CliError(`server error: ${sanitize(msg2.error.message ?? "unknown")}`);
+    return msg2.result;
+  }
+  async init(token) {
+    if (this.initialised)
+      return;
+    await this.rpc("initialize", { protocolVersion: PROTOCOL, capabilities: {}, clientInfo: { name: "osg-cli", version: this.o.version } }, token);
+    await this.post({ jsonrpc: "2.0", method: "notifications/initialized" }, token, false);
+    this.initialised = true;
+  }
+  async call(name, args) {
+    const token = await this.o.token();
+    await this.init(token);
+    const result = await this.rpc("tools/call", { name, arguments: args }, token);
+    if (!result)
+      throw new CliError("the server returned an empty result");
+    const text = (result.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join(`
+`);
+    if (result.isError)
+      throw new CliError(sanitize(text || `${name} failed`, 400));
+    let payload = result.structuredContent;
+    if (payload === undefined) {
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        throw new CliError(`unexpected response from ${name}`, 1, "update the Our Silly Games plugin in your app, then try again");
+      }
+    }
+    const parsed = MCP_TOOLS[name].output.safeParse(payload);
+    if (!parsed.success)
+      throw new CliError(`the server's answer to ${name} does not match this CLI version`, 1, "update the Our Silly Games plugin in your app, then try again");
+    return parsed.data;
+  }
+}
+async function readRpc(res, id3) {
+  const ct = res.headers.get("content-type") ?? "";
+  const text = await res.text();
+  if (ct.includes("text/event-stream")) {
+    for (const block of text.split(/\n\n/)) {
+      const data = block.split(`
+`).filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trimStart()).join(`
+`);
+      if (!data)
+        continue;
+      try {
+        const m = JSON.parse(data);
+        if (m.id === id3)
+          return m;
+      } catch {}
+    }
+    throw new CliError("the server's response had no matching message");
+  }
+  try {
+    const m = JSON.parse(text);
+    const one = Array.isArray(m) ? m.find((x2) => x2.id === id3) : m;
+    if (!one)
+      throw new Error("no message");
+    return one;
+  } catch {
+    throw new CliError("the server's response was not valid JSON-RPC");
+  }
+}
+
+// src/commands/status.ts
+var statusFlags = {
+  watch: { type: "boolean", alias: "w", description: "keep checking every 10 seconds until the submission finishes" },
+  log: { type: "boolean", description: "also print the tail of the build log" },
+  dev: { type: "boolean", description: "only say whether this project's game is running locally (osg dev) and its link; no sign-in needed" }
+};
+function devStatusLine(ctx, from) {
+  let root;
+  try {
+    root = findProjectRoot(from);
+  } catch {
+    return null;
+  }
+  const p = loadProject(root);
+  const name = sanitize(p.manifest.name, 80);
+  const s = liveDevState(p.root, ctx.procs);
+  return s ? `${name} is running: ${s.url}` : `${name} is not running.`;
+}
+async function runStatus(a, ctx) {
+  if (a.flags.dev) {
+    if (a.positionals[0] !== undefined)
+      throw new UsageError("--dev takes no submission id (run it in the game's folder)");
+    const line = devStatusLine(ctx, ctx.cwd);
+    if (!line)
+      loadProject(ctx.cwd);
+    ctx.out.log(line);
+    return 0;
+  }
+  if (a.positionals[0] === undefined) {
+    const line = devStatusLine(ctx, ctx.cwd);
+    if (line)
+      ctx.out.log(line);
+  }
+  const dir = configDir(ctx.env, ctx.home);
+  const mcp2 = new McpClient({ url: ctx.endpoints.mcp, version: ctx.version, fetch: ctx.fetch, token: () => accessToken({ endpoints: ctx.endpoints, configDir: dir, env: ctx.env, fetch: ctx.fetch, now: ctx.now }) });
+  let id3 = a.positionals[0];
+  if (!id3) {
+    const p = loadProject(ctx.cwd);
+    const g = (await mcp2.call("list_my_games", {})).find((x2) => x2.slug === p.manifest.slug);
+    id3 = g?.latestSubmission?.id;
+    if (!id3)
+      throw new CliError(`no submission found for ${p.manifest.slug}`, 1, "run `osg submit` first, or pass a submission id");
+  }
+  const submissionId = id3;
+  const deadline = ctx.now() + 25 * 60000;
+  for (;; ) {
+    const r2 = await mcp2.call("get_verification_report", { submissionId });
+    ctx.out.log(`Submission ${sanitize(r2.id, 40)}: ${r2.status}${r2.step ? ` (${sanitize(r2.step, 30)})` : ""}`);
+    if (r2.verdictRoute)
+      ctx.out.log(`  verdict: ${r2.verdictRoute}`);
+    if (r2.emailedTo)
+      ctx.out.log(`  we email ${sanitize(r2.emailedTo, 80)} when it is done`);
+    for (const f of r2.findings)
+      for (const l of formatFinding(f))
+        ctx.out.log(l);
+    if (r2.resubmitHint)
+      ctx.out.log(`  next: ${sanitize(r2.resubmitHint, 300)}`);
+    if (a.flags.log && r2.buildLogTail) {
+      ctx.out.log("  build log (untrusted text, last lines):");
+      for (const l of sanitize(r2.buildLogTail, 20000).split(`
+`).slice(-20))
+        ctx.out.log(`    ${l}`);
+    }
+    const terminal = SUBMISSION_TERMINAL.has(r2.status);
+    if (terminal || !a.flags.watch)
+      return r2.status === "rejected" || r2.status === "failed_system" ? 1 : 0;
+    if (ctx.now() > deadline)
+      throw new CliError("still not finished after 25 minutes", 1, "check your email or run `osg status` again later");
+    await ctx.sleep(1e4);
+  }
+}
+
+// src/commands/submit.ts
+import { mkdirSync as mkdirSync15, writeFileSync as writeFileSync11 } from "fs";
+import { join as join25 } from "path";
+
+// src/upload.ts
+function assertUploadUrl(putUrl, apiBase) {
+  let u;
+  try {
+    u = new URL(putUrl);
+  } catch {
+    throw new CliError("the server returned an invalid upload URL");
+  }
+  const base = new URL(apiBase);
+  const loopbackOk = base.hostname === "127.0.0.1" || base.hostname === "localhost";
+  if (u.origin !== base.origin || u.protocol !== "https:" && !loopbackOk)
+    throw new CliError(`refusing to upload to an unexpected address (${sanitize(u.origin, 80)})`, 1, `uploads only go to ${base.origin}`);
+  if (!u.pathname.startsWith("/v1/uploads/"))
+    throw new CliError("the upload URL has an unexpected path", 1, "refusing to upload");
+  return u;
+}
+async function putArchive(putUrl, zip, o) {
+  const u = assertUploadUrl(putUrl, o.apiBase);
+  const f = o.fetch ?? fetch;
+  let res;
+  try {
+    res = await f(u, { method: "PUT", headers: { "content-type": "application/zip", [HEADERS.client]: `cli/${o.version}` }, body: new Blob([zip.slice()]), redirect: "error", signal: AbortSignal.timeout(o.timeoutMs ?? 300000) });
+  } catch (e) {
+    throw new CliError(`the upload failed (${sanitize(e.message, 120)})`, 1, "check your network connection; run `osg submit` again");
+  }
+  const text = await res.text();
+  if (!res.ok) {
+    let msg2 = `HTTP ${res.status}`;
+    try {
+      const e = ApiError.safeParse(JSON.parse(text));
+      if (e.success)
+        msg2 = `${e.data.error.code}${e.data.error.message ? ": " + e.data.error.message : ""}`;
+    } catch {}
+    const hint = res.status === 409 ? "this upload slot was already used or the file changed in transit; run `osg submit` again" : res.status === 413 ? "the archive is over the size limit" : res.status === 401 || res.status === 403 ? "the upload slot expired; run `osg submit` again" : undefined;
+    throw new CliError(`the upload was refused: ${sanitize(msg2, 200)}`, 1, hint);
+  }
+  try {
+    const parsed = ROUTES.upload.res.parse(JSON.parse(text));
+    return { bytes: parsed.bytes, sha256: parsed.sha256 };
+  } catch {
+    throw new CliError("the upload answered with an unexpected body", 1, "update the Our Silly Games plugin in your app, then try again");
+  }
+}
+async function pluginNag(o) {
+  try {
+    const u = new URL(ROUTES.pluginStatus.path, o.apiBase);
+    u.searchParams.set("cli", o.version);
+    const res = await (o.fetch ?? fetch)(u, { headers: { accept: "application/json", [HEADERS.client]: `cli/${o.version}` }, redirect: "error", signal: AbortSignal.timeout(2500) });
+    if (!res.ok)
+      return null;
+    const j = ROUTES.pluginStatus.res.parse(await res.json());
+    return j.outdated && j.message ? sanitize(j.message, 300) : null;
+  } catch {
+    return null;
+  }
+}
+
+// src/commands/submit.ts
+var submitFlags = {
+  yes: { type: "boolean", alias: "y", description: "answer yes to the questions (creating the game, accepting the creator terms)" },
+  "accept-creator-terms": { type: "boolean", description: "accept the creator terms when creating the game (needed in non-interactive runs)" },
+  changelog: { type: "string", description: "what changed (max 500 characters; default: osg.json changelog)" },
+  "dry-run": { type: "boolean", description: "validate and pack, then stop before anything leaves your machine" },
+  check: { type: "boolean", default: true, description: "run the source validation first (--no-check to skip)" }
+};
+async function runSubmit(a, ctx) {
+  const p = loadProject(a.positionals[0] ?? ctx.cwd);
+  const err3 = (s) => ctx.out.err(s);
+  err3(`Submitting ${p.manifest.name} (${p.manifest.slug})`);
+  if (a.flags.check) {
+    const c = validateSourceTree(p.root, p.manifest, ctx);
+    printSourceCheck(c, ctx);
+    if (!c.ok)
+      throw new CliError("the source has problems the server would reject too", 1, "fix the items above (run `osg validate`), then submit again");
+    err3(`  source ok (${c.fileCount} files)`);
+  }
+  const plan = planPack(p.root, p.manifest);
+  const archive = await buildArchive(plan);
+  err3(`  packed ${archive.files} files, ${(archive.bytes / 1024).toFixed(0)} KiB, sha256 ${archive.sha256.slice(0, 12)}...`);
+  mkdirSync15(join25(p.root, ".osg"), { recursive: true });
+  writeFileSync11(join25(p.root, ".osg", "source.zip"), archive.zip);
+  if (archive.skippedSecrets.length)
+    err3(`  left out ${archive.skippedSecrets.length} secret-looking file(s)`);
+  if (a.flags["dry-run"]) {
+    ctx.out.log(`dry run: nothing was uploaded (${archive.bytes} bytes, sha256 ${archive.sha256})`);
+    return 0;
+  }
+  const dir = configDir(ctx.env, ctx.home);
+  const mcp2 = new McpClient({ url: ctx.endpoints.mcp, version: ctx.version, fetch: ctx.fetch, token: () => accessToken({ endpoints: ctx.endpoints, configDir: dir, env: ctx.env, fetch: ctx.fetch, now: ctx.now }) });
+  const nag = pluginNag({ apiBase: ctx.endpoints.api, version: ctx.version, fetch: ctx.fetch });
+  const who = await mcp2.call("whoami", {});
+  err3(`  signed in as ${sanitize(who.email ?? who.name, 80)}`);
+  const games = await mcp2.call("list_my_games", {});
+  let game = games.find((g) => g.slug === p.manifest.slug);
+  if (!game) {
+    const terms = who.creatorTermsUrl;
+    const q = `The game "${p.manifest.slug}" does not exist yet. Create it${who.canCreate ? "" : " and accept the creator terms" + (terms ? ` (${terms})` : "")}?`;
+    const ok = a.flags.yes ? who.canCreate || !!a.flags["accept-creator-terms"] : await ctx.confirm(q);
+    if (!ok) {
+      throw new CliError(who.canCreate ? `the game "${p.manifest.slug}" has not been created` : "the creator terms have not been accepted", 1, `${who.canCreate ? "pass --yes to create it" : "read the terms" + (terms ? ` at ${terms}` : "") + " and pass --yes --accept-creator-terms"}`);
+    }
+    const created = await mcp2.call("create_game", { slug: p.manifest.slug, name: p.manifest.name, acceptCreatorTerms: true });
+    err3(`  created game ${created.slug}`);
+    game = (await mcp2.call("list_my_games", {})).find((g) => g.gameId === created.gameId);
+    if (!game)
+      throw new CliError("the game was created but is not listed yet; try `osg submit` again");
+  }
+  const slot = await mcp2.call("request_upload", { gameId: game.gameId, bytes: archive.bytes, sha256: archive.sha256 });
+  if (archive.bytes > slot.maxBytes)
+    throw new CliError(`the archive (${archive.bytes} bytes) is over this slot's limit (${slot.maxBytes})`);
+  err3("  uploading...");
+  const up = await putArchive(slot.putUrl, archive.zip, { apiBase: ctx.endpoints.api, fetch: ctx.fetch, version: ctx.version });
+  if (up.sha256 !== archive.sha256)
+    throw new CliError("the server stored different bytes than were sent", 1, "run `osg submit` again");
+  const res = await mcp2.call("submit_version", { uploadId: slot.uploadId, ...a.flags.changelog ?? p.manifest.changelog ? { changelog: a.flags.changelog ?? p.manifest.changelog } : {} });
+  ctx.out.log(res.message);
+  const n = await nag;
+  if (n)
+    err3(n);
+  return 0;
+}
+
+// src/commands/upload.ts
+import { readFileSync as readFileSync15 } from "fs";
+var uploadFlags = { url: { type: "string", description: "the signed upload URL returned by request_upload (`-` reads it from stdin)" } };
+async function runUpload(a, ctx) {
+  const file2 = a.positionals[0];
+  if (!file2)
+    throw new CliError("usage: osg upload <source.zip> --url <putUrl>", 2);
+  let url2 = a.flags.url;
+  if (url2 === "-")
+    url2 = (await ctx.readStdin()).trim();
+  if (!url2)
+    throw new CliError("--url is required", 2);
+  const zip = new Uint8Array(readFileSync15(file2));
+  const r2 = await putArchive(url2, zip, { apiBase: ctx.endpoints.api, fetch: ctx.fetch, version: ctx.version });
+  const local = await sha256Hex(zip);
+  if (r2.sha256 !== local)
+    throw new CliError("the server stored different bytes than were sent", 1);
+  ctx.out.log(`uploaded ${r2.bytes} bytes, sha256 ${r2.sha256}`);
+  return 0;
+}
+
+// src/commands/update-sdk.ts
+var updateSdkFlags = {
+  install: { type: "boolean", default: true, description: "run `bun install` afterwards so the lockfile pins the new integrity (--no-install to skip)" }
+};
+async function runUpdateSdk(a, ctx) {
+  const p = loadProject(a.positionals[0] ?? ctx.cwd);
+  const pkg = readPackage(p.root);
+  if (!pkg)
+    throw new CliError("no package.json in the project", 2, "`osg update-sdk` only applies to projects that depend on @osg/sdk");
+  const r2 = await resolveSdk(ctx, { fallback: false });
+  const before = pkg.spec;
+  const beforeVersion = installedSdkVersion(p.root, before) ?? (before ? specVersion(before) : null);
+  if (before === r2.url) {
+    ctx.out.log(`${SDK_PACKAGE} is already at ${r2.version} (${r2.url}).`);
+    return 0;
+  }
+  writePackage(pkg, r2.url);
+  ctx.out.log(`${SDK_PACKAGE}: ${beforeVersion ?? before ?? "(not a dependency)"} -> ${r2.version}`);
+  ctx.out.log(`  package.json now has ${r2.url}`);
+  ctx.out.log(`  tarball verified (${r2.integrity})`);
+  if (a.flags.install) {
+    ctx.out.log("Installing with bun to update the lockfile...");
+    const env = Object.fromEntries(Object.entries(ctx.env).filter(([, v]) => v !== undefined));
+    const i2 = await ctx.runner.run(["bun", "install"], { cwd: p.root, env, timeoutMs: 180000 });
+    if (i2.code !== 0) {
+      ctx.out.err(`bun install did not finish (${i2.timedOut ? "timed out" : "exit " + i2.code}). package.json is updated; run \`bun install\` and commit bun.lock.`);
+      return 1;
+    }
+    if (!await fitLockfileToBuilder(ctx, p.root, env))
+      return 1;
+    ctx.out.log("bun.lock updated: commit it with package.json.");
+  } else
+    ctx.out.log("Run `bun install` and commit bun.lock (the lockfile pins the integrity the build checks).");
+  return 0;
+}
+
+// src/commands/validate.ts
+import { readFileSync as readFileSync16 } from "fs";
+var validateFlags = {};
+async function runValidate(a, ctx) {
+  const p = loadProject(a.positionals[0] ?? ctx.cwd);
+  for (const w of p.warnings)
+    ctx.out.log(`  [warning] ${w.path || "(root)"}: ${w.message} (${w.code})`);
+  for (const l of await sdkAdvisories(p.root, ctx))
+    ctx.out.log(l);
+  const c = validateSourceTree(p.root, p.manifest, ctx);
+  printSourceCheck(c, ctx);
+  let ok = c.ok;
+  if (p.manifest.features.pads?.controller) {
+    if (p.manifest.build.template === "static") {
+      const out = new Map(outputFiles(p.root, p.manifest).map((f) => [f.path, new Uint8Array(readFileSync16(f.abs))]));
+      const ctl = await checkController(out, p.manifest, ctx);
+      ok &&= ctl?.ok ?? true;
+    } else
+      ctx.out.log(`  custom controller ${p.manifest.features.pads.controller}: checked after the build by \`osg check\``);
+  }
+  ctx.out.log(ok ? `OK: ${p.manifest.slug} passes source validation (${c.fileCount} files).` : `FAILED: ${p.manifest.slug} has problems above. The server runs the same checks.`);
+  return ok ? 0 : 1;
+}
+
+// src/context.ts
+import { homedir as homedir3 } from "os";
+
 // src/browser.ts
 import { existsSync as existsSync16 } from "fs";
 import { homedir as homedir2 } from "os";
-import { join as join25 } from "path";
+import { join as join26 } from "path";
 function findChrome(env = process.env, platform = process.platform) {
   const candidates = [env.OSG_CHROME, env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH];
   if (platform === "darwin")
-    candidates.push("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/Applications/Chromium.app/Contents/MacOS/Chromium", "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser", join25(homedir2(), "Applications/Google Chrome.app/Contents/MacOS/Google Chrome"));
+    candidates.push("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/Applications/Chromium.app/Contents/MacOS/Chromium", "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser", join26(homedir2(), "Applications/Google Chrome.app/Contents/MacOS/Google Chrome"));
   else if (platform === "win32") {
     for (const base of [env.PROGRAMFILES, env["PROGRAMFILES(X86)"], env.LOCALAPPDATA])
       if (base)
-        candidates.push(join25(base, "Google/Chrome/Application/chrome.exe"), join25(base, "Microsoft/Edge/Application/msedge.exe"));
+        candidates.push(join26(base, "Google/Chrome/Application/chrome.exe"), join26(base, "Microsoft/Edge/Application/msedge.exe"));
   } else
     candidates.push("/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser", "/snap/bin/chromium", "/usr/bin/microsoft-edge");
   for (const c of candidates)
