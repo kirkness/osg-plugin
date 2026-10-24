@@ -6,7 +6,7 @@ Marketplace `osg`, plugin `osg`, repository `kirkness/osg-plugin`. Source of tru
 
 ## Codex installation
 
-The Codex package in this checkout is ready for local testing. Public installation below becomes available after this directory is released to `kirkness/osg-plugin` and the sign-in changes are deployed; it is not a public directory listing.
+Install from the public Git marketplace at `kirkness/osg-plugin` using the commands below.
 
 With a current Codex CLI that supports `codex plugin add`:
 
@@ -88,7 +88,7 @@ claude --plugin-dir plugin            # try it without installing
 
 Author-facing docs live in `docs/author/` (served by the MCP docs server and linked from the skills by slug). Skills stay thin and point at `read_doc` and `get_playbook`, so content is updated by deploying the MCP Worker, not by releasing the plugin.
 
-Release: bump `version` in `.claude-plugin/plugin.json`, then run `bun plugin/scripts/sync-codex.ts` to keep the Codex version aligned. Sync the CLI, run the tests and both host smoke checks, then tag and publish through the normal release process. Do not bump either marketplace entry separately. Deploy the sign-in changes before enabling the website’s Codex installation flow. `PLUGIN_LATEST` and `PLUGIN_MIN` in osg-api decide when users are told they are outdated.
+Release: bump `version` in `.claude-plugin/plugin.json`, then run `bun plugin/scripts/sync-codex.ts` to keep the Codex version aligned. Sync the CLI, run the tests and both host smoke checks, then tag and publish through the normal release process. Do not bump either marketplace entry separately. Deploy required sign-in changes before publishing the plugin. `PLUGIN_LATEST` and `PLUGIN_MIN` in osg-api decide when users are told they are outdated.
 
 ## Manual test plan
 
@@ -138,6 +138,6 @@ Question: does opening the starter project in the desktop app's Code tab show th
 4. Authenticate the account MCP server using the host’s sign-in prompt. Call `whoami`, `get_quota` and `list_my_games`. Do not assume the server’s host-qualified name is literally `osg`; use the name shown by the MCP list.
 5. Run `$osg-publish` only on a throwaway game you intend to publish. Verify local validation, archive hash and exact byte size, MCP upload slot, bundled upload checksum verification, MCP submission, review status and the final email. There should be only one account sign-in in the plugin flow. A failed upload must never submit a version.
 6. Confirm an ordinary “improve my game” request cannot trigger a publish; missing Bun or missing MCP connections produce actionable setup instructions.
-7. Run the public Git marketplace install after the release lands. Keep `NEXT_PUBLIC_CODEX_ENABLED` off in production until both this smoke test and real OAuth login pass.
+7. Run the public Git marketplace install after the release lands. Record the installation and real OAuth login results with the release smoke test.
 
 Packaging and commands follow [OpenAI’s plugin packaging guide](https://developers.openai.com/plugins/build/plugins), [developer commands](https://learn.chatgpt.com/docs/developer-commands), and [skill invocation policy](https://learn.chatgpt.com/docs/build-skills).
