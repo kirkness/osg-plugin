@@ -47,7 +47,7 @@ Follow the `osg-design` skill now, before any code: hook, friend test, 30-second
 
 ## 5. Tell the author the timeline
 
-When they submit (`$osg-publish`, when they are ready to publish), we build the source, run the game in a cloud browser, check the rules, and **publish immediately if it passes**. They get an **email in about 10-20 minutes**, and can close the window. A rejection email says exactly what to fix.
+When they submit (`$osg-publish`, when they are ready to publish), we build the source, run the game in a cloud browser, check the rules, and **publish immediately if it passes**. They get an **email in about 5 minutes**, and can close the window. A rejection email says exactly what to fix.
 
 Submitting needs an Our Silly Games account; nothing before that does. Once the game first runs, offer to connect their account now so publishing is ready later. Only if they agree, help them connect the osg account MCP server through Codex’s sign-in prompt. If they prefer to wait, continue building; $osg-publish handles account setup when they are ready. Do not start a separate CLI login for this native MCP workflow.
 

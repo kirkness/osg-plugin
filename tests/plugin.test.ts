@@ -194,7 +194,7 @@ describe("skills", () => {
     expect(s).toContain("/effort ultracode");
     expect(s).toContain("--effort ultracode");
     expect(s).toContain("osg-design");
-    expect(s).toMatch(/10-20 minutes/);
+    expect(s).toMatch(/about 5 minutes/);
     expect(s).toContain("init");
   });
 
@@ -225,7 +225,7 @@ describe("skills", () => {
     for (const m of allowed.matchAll(/Bash\(([^)]*)\)/g)) expect(m[1] === "bun --version" || m[1]!.startsWith('bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" ')).toBe(true);
     // the body tells Claude to stop and ask, and to print the CLI message verbatim
     expect(fm.body).toContain("verbatim");
-    expect(fm.body).toMatch(/10-20 minutes/);
+    expect(fm.body).toMatch(/about 5 minutes/);
   });
 
   test("no skill allows Write, Edit or unrestricted Bash", () => {

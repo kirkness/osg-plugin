@@ -1,6 +1,6 @@
 ---
 name: osg-publish
-description: Submit the game for build and review (author-invoked only). Validates, builds and packs locally, confirms the account and game, uploads the source and submits for verification, then explains the 10-20 minute email. Polls the verification report only if asked.
+description: Submit the game for build and review (author-invoked only). Validates, builds and packs locally, confirms the account and game, uploads the source and submits for verification, then explains the 5 minute email. Polls the verification report only if asked.
 disable-model-invocation: true
 allowed-tools: Bash(bun --version) Bash(bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" validate*) Bash(bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" check*) Bash(bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" build*) Bash(bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" pack*) Bash(bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" status*) mcp__plugin_osg_osg-docs__read_doc mcp__plugin_osg_osg-docs__validate_manifest mcp__plugin_osg_osg__whoami mcp__plugin_osg_osg__list_my_games mcp__plugin_osg_osg__get_quota
 ---
@@ -22,7 +22,7 @@ The store card and game page show these, so make them good. Unless `osg.json` al
 3. **Game** (only when the `osg` tools are available). Call `list_my_games`. If no game has the `slug` in `osg.json`, ask the author to confirm the slug and name, then call `create_game` (the author is asked to confirm; it records their acceptance of the creator terms, so tell them that first).
 4. **Show what will be sent.** Run `pack` and report the file count and size, and confirm nothing secret is inside (`.env`, keys are excluded automatically; still check).
 5. **Submit.** Run `bun "${CLAUDE_PLUGIN_ROOT}/scripts/osg.mjs" submit` (it packs, asks the platform for a one-time upload address with `request_upload`, uploads the bytes itself, then calls `submit_version`). If it says the author is not signed in or the sign-in expired, run `login` as in step 2 and submit again. It cannot ask questions itself: if it stops because the game does not exist yet, ask the author to confirm the slug and name, tell them creating it records their acceptance of the creator terms (summarise them), and only on their yes run `submit --yes`, adding `--accept-creator-terms` only if it said the terms have not been accepted. The author approves each prompt. Print the message it returns **verbatim**.
-6. **Set expectations.** Say: we build and review the game and email them in about 10-20 minutes; they can close the window; it publishes immediately if it passes; a rejection email says what to change in plain words; they can ask you how it's going at any time (you check with `osg status <submissionId>`, never them). If it is rejected, offer to fix what the email lists and resubmit.
+6. **Set expectations.** Say: we build and review the game and email them in about 5 minutes; they can close the window; it publishes immediately if it passes; a rejection email says what to change in plain words; they can ask you how it's going at any time (you check with `osg status <submissionId>`, never them). If it is rejected, offer to fix what the email lists and resubmit.
 
 ## Afterwards
 

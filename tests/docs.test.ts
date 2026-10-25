@@ -104,7 +104,7 @@ describe("hand-written numbers match LIMITS", () => {
   test("publish and rules", () => {
     has("publish", `${LIMITS.verify.deadlineMs / 60000}`);
     has("rules", `${LIMITS.verify.rejectedRetentionDays} days`);
-    has("publish", "10-20");
+    has("publish", "about 5 minutes");
     has("getting-started", PLUGIN.minClaudeCode);
   });
 });
