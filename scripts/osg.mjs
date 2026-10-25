@@ -144,7 +144,7 @@ var PLUGIN = {
   installCommand: "claude plugin install osg --marketplace kirkness/osg-plugin",
   minClaudeCode: "2.1.292"
 };
-var PLUGIN_VERSIONS = { latest: "0.4.6", minSupported: "0.1.0" };
+var PLUGIN_VERSIONS = { latest: "0.4.7", minSupported: "0.1.0" };
 var OSG_CLI_CLIENT_METADATA_PATH = "/oauth/osg-cli-client-metadata";
 var OSG_CLI_CLIENT_ID = /* @__PURE__ */ (() => `https://${HOSTS.site}${OSG_CLI_CLIENT_METADATA_PATH}`)();
 // ../protocol/src/limits.ts
