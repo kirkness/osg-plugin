@@ -21,7 +21,7 @@ Read the `dev` doc (`read_doc`, slug `dev`) for the full flag list, and run `bun
 | `dev --strict` | production limits |
 | `dev --host-style=path` | Safari, when `*.localhost` does not resolve |
 | `check [--players N]` | validate, scan, build, then play headless (N pages in a room). Same finding codes and fix hints as the server |
-| `shot` | screenshots at 1280x720 for self-critique |
+| `shot` | screenshots at 1280x720 for self-critique; `--listing --steps "..."` plays a script and writes store-listing WebPs to `listing/` (see `osg-publish`) |
 | `update-sdk` | move the project to the latest `@osg/sdk` tarball from oursilly.games/sdk and refresh the lockfile. Run it, then `check`. `OSG_SDK_BASE` overrides the base URL for local or staging use. |
 | `validate`, `build`, `pack` | manifest and archive rules, the pinned build, the source archive |
 
