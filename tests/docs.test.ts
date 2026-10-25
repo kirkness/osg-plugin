@@ -62,7 +62,7 @@ describe("limits.md is generated", () => {
   test("it carries the real numbers", () => {
     const t = read(docPath("limits"));
     expect(t).toContain(`\`room.maxDataFrame\` | ${LIMITS.room.maxDataFrame} (16 KiB)`);
-    expect(t).toContain(`**${LIMITS.verify.perAuthorSubmissionsPerDay} times per day**`);
+    expect(t).toContain(`**${LIMITS.verify.perGameSubmissionsPerDay} times per day** (${LIMITS.verify.perAuthorSubmissionsPerDay} across all your games)`);
     expect(t).toContain(`**${LIMITS.seats} seats**`);
   });
   test("platform-internal tuning is not published", () => {
