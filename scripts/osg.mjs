@@ -35154,6 +35154,59 @@ function configDir(env = process.env, home = homedir()) {
   return join23(home, ".config", "osg");
 }
 
+// src/callback-page.ts
+var NAME = "Our Silly Games";
+var LOGO_FONT = "data:font/woff2;base64,d09GMgABAAAAAAUoAA4AAAAACVAAAATWAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGhwbgj4cKAZgAGwRCAqFWIRlCxYAATYCJAMoBCAFhFgHIBvUB8jEINys2ZAgSUWNVNwoqSq1U4F7h3NR+uK+f+w3M3Zdu2jJ1MQ98IeaJ0uN6zCTtP1GnOSy0OoG9QwKOxV3PKsHAWABDhm6Vw4CJVQg+Z/jISINTF5BmQZuQx2TRmAFtqLqjyFV2A2QwZ4JI1AycpPLgoHSsxc8xO5atUZMghyK+obfse4n104/Ht5G18dUebvfQgNkoz/Zud/p73RpmvSmbyf9ghhJXpCBhXzqQBpZly6DDLllQQ5MziCbuAxqOYwO4X0cKpCFBETAry5sBEXRy4ChO6GkX/j8n6Ci32p+hzH6O2SQpBxU0aUgUNH1G8cOQhDNbhMbJoO3swxHFoMDGCNTD/Sl7imkFTGkAdqGIka4sLKyEJfhgwbZZWoDsJNwHyDL9tGTyTzG6LNAA7NQdNgAwFYWRDx2sEHvM/BBNvJRiGKUoxYNUxpLU8vepR/RK/QivUDP07P0BD3cy1StloBQCmtE4bUObNoSwPvQQTJqmlgbmQum1r/awdXGXSWz9GLlVuEWHUaz2UwMY2NjgunFixfQP3/+XDpEDGYzb3z+HHr1ygKgroNerzHdO0YMR+/yxtuHoT9yp840NkYMW91WrGhj5Y29cAzO+6EnIGn4Nq1lC6/VCo2cpYaHYD5qwTXpXzyIJ1qB2V1Z3nM0XnPy5GCRNoHl8RWCxqJLy/CcVmhoElheppFM54hhb5D2Ln5fMr24QTSGm2beeBr6PYF1U/5ljdGcIBluvJAahbo6QZKEevAJynRdeHWlejArXa2rrtap09N16upqtS49/qsbH/JiTqZOl5mTXiEGlavjz6itwkPz80PDkrqTMruyOYt3PbzFj729Pxa93be8ZsZVhYqlcW4fXpN7KMMqSoandqekdWX8Q1hezM4c1GXiy3a79ieLJjt1iOvHHtm1D6ytC+Xw+APPTbdGznlu2jDvW89NSwrxWVeJo1T4SX7C69/k/NrjlNNuKizd/PIr1duWlXb6lwpTbbdxn7vEZfl6ahHx6Nrja4h4dC3oPa89BuQsk570XixMeP17U4Qp4vTji93SI3y4NajO1dZ+YCBqb2aDdmTC0MtIbFA1wn4zuELWLyDP0+a4UROQ65leXzM6cerLyBlvc9Z+MxTVCpx958QvT5OfWUuMtZT87PbJX969BgA4fW8xpKj6e5s/26zTflNay77ko+/EvfQ2vPWj+fey/3+XxrFP2UkAXgbQAgS4K6e/+/+71Jd9eoq/i2dGYI2/AaYCHPkNYPzhQDyhJk+hZj6ivzMCXJmUNwPOeKEeCtTGxjTFPfMq0etbWBXL3k1KhAQeRBQysCI+Qhmy8KGQRQSOCzlo0C6UIwwJWiv4OtCPSZiEcZiIFEQikunswgQMYBwmyXQRE7VD8OOjmIA+RKISBShDFSZgFJPQg4mMtpaB+pWD6IEaNXJlHyZjCB3Qo0UPhB6IjGIEPoiBiChEIR6p8CGb6UUHJkPPKPqZv2gEk+CDEExBNEQkQUQcRCRCjXh0Ix6dCCW86cNK85kgdV6FqEQlCpE69SmxuYnW5mIU4zBdxr4thYVilJnzgQb9E5vaWhEn6ShdmL0N2L/VOFGaeji+PgyUVk5GJ0R0odwwIjHa1teBKZuM4yaq7Wa2RRLD0Jdc8aM8FgMN";
+var CALLBACK_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+var CHECK = `<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+var CROSS = `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+function callbackPage(ok) {
+  const title = ok ? "You're signed in" : "Sign-in didn't finish";
+  const body = ok ? "Head back to your terminal or AI app to carry on. You can close this tab." : "Nothing was connected. Run <code>osg login</code> again to have another go.";
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>${title} \xB7 ${NAME}</title>
+<style>
+@font-face{font-family:"OSG Logo";src:url(${LOGO_FONT}) format("woff2");font-display:block}
+:root{--bg:#05060a;--ink:#f2f4f8;--muted:#a3abbd;--dim:#8b93a6;--cyan:#4ff3ff;--ok:#9dffb6;--bad:#ff7a6b;--line:rgba(255,255,255,.14);--panel:rgba(18,20,30,.72);
+--ui:system-ui,-apple-system,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;--logo:"OSG Logo",Impact,sans-serif;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;display:grid;place-items:center;padding:24px 16px;background:var(--bg);color:var(--ink);font:15px/1.5 var(--ui);-webkit-font-smoothing:antialiased;
+background-image:radial-gradient(60% 50% at 50% 0%,rgba(79,243,255,.10),transparent 70%),radial-gradient(50% 40% at 50% 100%,rgba(157,255,182,.06),transparent 70%)}
+main{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:28px;text-align:center}
+.lockup{display:inline-flex;flex-direction:column;align-items:center;gap:9px}
+.our{font:500 9px/1 var(--mono);letter-spacing:.5em;margin-right:-.5em;text-transform:uppercase;color:var(--muted)}
+.word{font:400 29px/.86 var(--logo);text-transform:uppercase;letter-spacing:.005em}
+.card{width:100%;padding:32px 28px 28px;border:1px solid var(--line);border-radius:22px;background:var(--panel);display:flex;flex-direction:column;align-items:center;gap:12px}
+.badge{display:grid;place-items:center;width:56px;height:56px;border-radius:999px;margin-bottom:6px;color:var(--ok);background:rgba(157,255,182,.12);border:1px solid rgba(157,255,182,.35);animation:pop .5s cubic-bezier(.2,1.4,.4,1) both}
+.bad .badge{color:var(--bad);background:rgba(255,122,107,.12);border-color:rgba(255,122,107,.35)}
+h1{margin:0;font-size:22px;line-height:1.25;letter-spacing:-.01em}
+p{margin:0;color:var(--muted);text-wrap:balance}
+code{font:13px var(--mono);color:var(--ink);background:rgba(255,255,255,.07);padding:2px 6px;border-radius:6px;white-space:nowrap}
+.foot{font:500 11px/1.4 var(--mono);letter-spacing:.06em;color:var(--dim)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.badge{animation:none}}
+</style>
+</head>
+<body>
+<main${ok ? "" : ` class="bad"`}>
+<div class="lockup" role="img" aria-label="${NAME}"><span class="our" aria-hidden="true">our</span><span class="word" aria-hidden="true">Silly<br>Games</span></div>
+<div class="card" role="status">
+<div class="badge">${ok ? CHECK : CROSS}</div>
+<h1>${title}</h1>
+<p>${body}</p>
+</div>
+<p class="foot">osg login \xB7 this page is served by the CLI on your computer</p>
+</main>
+</body>
+</html>`;
+}
+
 // src/oauth.ts
 var CLI_CLIENT_ID = OSG_CLI_CLIENT_ID;
 async function getJson(f, url2, what) {
@@ -35229,7 +35282,8 @@ async function login(o) {
         return new Response("this login link was already used", { status: 410 });
       served = true;
       resolveCb(u.searchParams);
-      return new Response("<!doctype html><meta charset=utf-8><title>osg</title><p>You can close this tab and go back to the terminal.</p>", { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer" } });
+      const ok = !u.searchParams.has("error") && u.searchParams.get("state") === state && u.searchParams.has("code");
+      return new Response(callbackPage(ok), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer", "content-security-policy": CALLBACK_CSP } });
     }
   });
   try {
